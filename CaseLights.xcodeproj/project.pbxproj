@@ -78,6 +78,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = E9F13E0F1C28B3D3004C6B95 /* Build configuration list for PBXNativeTarget "CaseLights" */;
 			buildPhases = (
+				E9AB17FC1C28B43B00BF3C51 /* Increment build number */,
 				E9F13DFA1C28B3D3004C6B95 /* Sources */,
 				E9F13DFB1C28B3D3004C6B95 /* Frameworks */,
 				E9F13DFC1C28B3D3004C6B95 /* Resources */,
@@ -134,6 +135,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		E9AB17FC1C28B43B00BF3C51 /* Increment build number */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Increment build number";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/bin/sh\n\nplist=\"${PROJECT_DIR}/${INFOPLIST_FILE}\"\ndir=\"$(dirname \"$plist\")\"\n\n# Only increment the build number if source files have changed\nif [ -n \"$(find \"$dir\" \\! -path \"*xcuserdata*\" \\! -path \"*.git*\" \\! -name .DS_Store \\! -path \"*Website*\" -newer \"$plist\")\" ]; then\nbuildnum=$(/usr/libexec/Plistbuddy -c \"Print CFBundleVersion\" \"$plist\")\nif [ -z \"$buildnum\" ]; then\necho \"No build number in $plist\"\nexit 2\nfi\nbuildnum=$(expr $buildnum + 1)\n/usr/libexec/Plistbuddy -c \"Set CFBundleVersion $buildnum\" \"$plist\"\necho \"Incremented build number to $buildnum\"\nelse\necho \"Not incrementing build number as source files have not changed\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		E9F13DFA1C28B3D3004C6B95 /* Sources */ = {
@@ -281,6 +299,7 @@
 				E9F13E111C28B3D3004C6B95 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
