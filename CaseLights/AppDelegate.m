@@ -18,9 +18,10 @@
 
 @implementation AppDelegate
 
-@synthesize statusMenu, statusItem, statusImage;
+@synthesize statusMenu, application;
 @synthesize menuColors, menuAnimations, menuVisualizations, menuPorts;
 @synthesize buttonOff, buttonLights;
+@synthesize statusItem, statusImage;
 @synthesize staticColors;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
@@ -157,6 +158,11 @@
     // TODO Close previously opened port, if any
     
     // TODO Try to open selected port
+}
+
+- (IBAction)showAbout:(id)sender {
+    [NSApp activateIgnoringOtherApps:YES];
+    [application orderFrontStandardAboutPanel:self];
 }
 
 @end

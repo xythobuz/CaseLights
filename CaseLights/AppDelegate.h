@@ -11,6 +11,7 @@
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 
 @property (weak) IBOutlet NSMenu *statusMenu;
+@property (weak) IBOutlet NSApplication *application;
 
 @property (weak) IBOutlet NSMenu *menuColors;
 @property (weak) IBOutlet NSMenu *menuAnimations;

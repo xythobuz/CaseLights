@@ -14,6 +14,7 @@
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <customObject id="Voe-Tx-rLC" customClass="AppDelegate">
             <connections>
+                <outlet property="application" destination="-3" id="3TG-JL-HaQ"/>
                 <outlet property="buttonLights" destination="tLQ-BA-kGu" id="FZv-Ju-l7n"/>
                 <outlet property="buttonOff" destination="gT4-tm-Hvn" id="EEv-lf-Qo7"/>
                 <outlet property="menuAnimations" destination="FJm-ND-abA" id="iGI-Hg-tms"/>
@@ -33,7 +34,7 @@
                             <menuItem title="About CaseLights" id="5kV-Vb-QxS">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
-                                    <action selector="orderFrontStandardAboutPanel:" target="-1" id="Exp-CZ-Vem"/>
+                                    <action selector="showAbout:" target="Voe-Tx-rLC" id="1ud-LX-A1L"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="VOq-y0-SEH"/>
@@ -712,7 +713,7 @@
                 <menuItem title="About CaseLights" id="GeK-ey-XEn">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
-                        <action selector="orderFrontStandardAboutPanel:" target="-1" id="SFx-g1-SMR"/>
+                        <action selector="showAbout:" target="Voe-Tx-rLC" id="Odh-zd-kmk"/>
                     </connections>
                 </menuItem>
                 <menuItem title="Quit CaseLights" keyEquivalent="q" id="2cH-5V-zpa">
