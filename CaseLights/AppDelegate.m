@@ -10,13 +10,19 @@
 
 @interface AppDelegate ()
 
-@property (weak) IBOutlet NSWindow *window;
 @end
 
 @implementation AppDelegate
 
+@synthesize statusMenu, statusItem, statusImage;
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-    // Insert code here to initialize your application
+    statusImage = [NSImage imageNamed:@"MenuIcon"];
+    [statusImage setTemplate:YES];
+    
+    statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSSquareStatusItemLength];
+    [statusItem setImage:statusImage];
+    [statusItem setMenu:statusMenu];
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
