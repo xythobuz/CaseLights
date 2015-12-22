@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E9AB18011C29F8CD00BF3C51 /* Serial.m in Sources */ = {isa = PBXBuildFile; fileRef = E9AB18001C29F8CD00BF3C51 /* Serial.m */; };
 		E9F13E031C28B3D3004C6B95 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = E9F13E021C28B3D3004C6B95 /* AppDelegate.m */; };
 		E9F13E061C28B3D3004C6B95 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = E9F13E051C28B3D3004C6B95 /* main.m */; };
 		E9F13E081C28B3D3004C6B95 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E9F13E071C28B3D3004C6B95 /* Assets.xcassets */; };
@@ -14,6 +15,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		E9AB17FF1C29F8CD00BF3C51 /* Serial.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Serial.h; sourceTree = "<group>"; };
+		E9AB18001C29F8CD00BF3C51 /* Serial.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Serial.m; sourceTree = "<group>"; };
 		E9F13DFE1C28B3D3004C6B95 /* CaseLights.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CaseLights.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9F13E011C28B3D3004C6B95 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		E9F13E021C28B3D3004C6B95 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -58,6 +61,8 @@
 				E9F13E071C28B3D3004C6B95 /* Assets.xcassets */,
 				E9F13E091C28B3D3004C6B95 /* MainMenu.xib */,
 				E9F13E0C1C28B3D3004C6B95 /* Info.plist */,
+				E9AB17FF1C29F8CD00BF3C51 /* Serial.h */,
+				E9AB18001C29F8CD00BF3C51 /* Serial.m */,
 				E9F13E041C28B3D3004C6B95 /* Supporting Files */,
 			);
 			path = CaseLights;
@@ -158,6 +163,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E9AB18011C29F8CD00BF3C51 /* Serial.m in Sources */,
 				E9F13E061C28B3D3004C6B95 /* main.m in Sources */,
 				E9F13E031C28B3D3004C6B95 /* AppDelegate.m in Sources */,
 			);

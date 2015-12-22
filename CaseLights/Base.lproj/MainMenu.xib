@@ -14,6 +14,12 @@
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <customObject id="Voe-Tx-rLC" customClass="AppDelegate">
             <connections>
+                <outlet property="buttonLights" destination="tLQ-BA-kGu" id="FZv-Ju-l7n"/>
+                <outlet property="buttonOff" destination="gT4-tm-Hvn" id="EEv-lf-Qo7"/>
+                <outlet property="menuAnimations" destination="FJm-ND-abA" id="iGI-Hg-tms"/>
+                <outlet property="menuColors" destination="ZKz-ek-t6c" id="B2S-fy-Ca6"/>
+                <outlet property="menuPorts" destination="lFU-D0-M5p" id="pHd-AA-S3J"/>
+                <outlet property="menuVisualizations" destination="yZl-ae-7SI" id="b2b-dW-mvy"/>
                 <outlet property="statusMenu" destination="g7M-LS-DgA" id="txO-T1-8yD"/>
             </connections>
         </customObject>
@@ -671,60 +677,26 @@
             <items>
                 <menuItem title="Color Presets" id="n9c-Wh-TZw">
                     <modifierMask key="keyEquivalentModifierMask"/>
-                    <menu key="submenu" title="Color Presets" id="ZKz-ek-t6c">
-                        <items>
-                            <menuItem title="Red" id="IlX-tU-VCP">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                            </menuItem>
-                            <menuItem title="Green" id="SxE-sX-kXr">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                            </menuItem>
-                            <menuItem title="Blue" id="Nmo-Lq-eed">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                            </menuItem>
-                            <menuItem title="Yellow" id="jGz-Kp-OP9">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                            </menuItem>
-                            <menuItem title="Pink" id="qtS-y4-5Yx">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                            </menuItem>
-                            <menuItem title="White" id="E2D-Kn-Y1D">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                            </menuItem>
-                            <menuItem title="Orange" id="pU6-cU-a3D">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                            </menuItem>
-                            <menuItem title="Aquamarin" id="D0a-Bv-uWf">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                            </menuItem>
-                            <menuItem title="Purple" id="IlT-ov-cdQ">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                            </menuItem>
-                        </items>
-                    </menu>
+                    <menu key="submenu" title="Color Presets" id="ZKz-ek-t6c"/>
+                </menuItem>
+                <menuItem title="Animations" id="93N-lv-QQC">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="Animations" id="FJm-ND-abA"/>
                 </menuItem>
                 <menuItem title="Visualizations" id="Ydc-Gt-rOt">
                     <modifierMask key="keyEquivalentModifierMask"/>
-                    <menu key="submenu" title="Visualizations" id="yZl-ae-7SI">
-                        <items>
-                            <menuItem title="CPU Usage" id="rtI-Yu-3jn">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                            </menuItem>
-                            <menuItem title="CPU Temperature" id="hSc-c9-Duc">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                            </menuItem>
-                            <menuItem title="GPU Temperature" id="faB-Yd-HLr">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                            </menuItem>
-                        </items>
-                    </menu>
+                    <menu key="submenu" title="Visualizations" id="yZl-ae-7SI"/>
                 </menuItem>
-                <menuItem title="Turn LEDs off" id="gT4-tm-Hvn">
-                    <modifierMask key="keyEquivalentModifierMask"/>
+                <menuItem title="Turn LEDs off" keyEquivalent="e" id="gT4-tm-Hvn">
+                    <connections>
+                        <action selector="turnLEDsOff:" target="Voe-Tx-rLC" id="FQw-v8-IbT"/>
+                    </connections>
                 </menuItem>
                 <menuItem isSeparatorItem="YES" id="umI-9c-ZzN"/>
-                <menuItem title="UV Lights" id="tLQ-BA-kGu">
-                    <modifierMask key="keyEquivalentModifierMask"/>
+                <menuItem title="UV Lights" keyEquivalent="w" id="tLQ-BA-kGu">
+                    <connections>
+                        <action selector="toggleLights:" target="Voe-Tx-rLC" id="eLZ-43-xtu"/>
+                    </connections>
                 </menuItem>
                 <menuItem isSeparatorItem="YES" id="Bgw-0M-KDy"/>
                 <menuItem title="Serial Port" id="K0K-po-BF0">

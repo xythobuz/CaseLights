@@ -12,8 +12,18 @@
 
 @property (weak) IBOutlet NSMenu *statusMenu;
 
+@property (weak) IBOutlet NSMenu *menuColors;
+@property (weak) IBOutlet NSMenu *menuAnimations;
+@property (weak) IBOutlet NSMenu *menuVisualizations;
+@property (weak) IBOutlet NSMenu *menuPorts;
+
+@property (weak) IBOutlet NSMenuItem *buttonOff;
+@property (weak) IBOutlet NSMenuItem *buttonLights;
+
 @property (strong) NSStatusItem *statusItem;
 @property (strong) NSImage *statusImage;
+
+@property (strong) NSDictionary *staticColors;
 
 @end
 
