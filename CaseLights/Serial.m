@@ -9,6 +9,8 @@
 //  Copyright © 2015 xythobuz. All rights reserved.
 //
 
+#import <Cocoa/Cocoa.h>
+#import <IOKit/IOKitLib.h>
 #import <IOKit/serial/IOSerialKeys.h>
 
 #import "Serial.h"

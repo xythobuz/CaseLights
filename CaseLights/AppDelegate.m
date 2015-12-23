@@ -8,6 +8,7 @@
 
 #import "AppDelegate.h"
 #import "Serial.h"
+#import "GPUStats.h"
 
 #define PREF_SERIAL_PORT @"SerialPort"
 #define PREF_LIGHTS_STATE @"LightState"
@@ -60,7 +61,21 @@
     
     // TODO Prepare animations menu
     
-    // TODO Prepare visualizations menu
+    // Check if GPU Stats are available, add menu items if so
+    NSNumber *usage;
+    NSNumber *freeVRAM;
+    NSNumber *usedVRAM;
+    if ([GPUStats getGPUUsage:&usage freeVRAM:&freeVRAM usedVRAM:&usedVRAM] != 0) {
+        NSLog(@"Error reading GPU information\n");
+    } else {
+        NSMenuItem *itemUsage = [[NSMenuItem alloc] initWithTitle:@"GPU Usage" action:@selector(selectedGPUVisualization:) keyEquivalent:@""];
+        [menuVisualizations addItem:itemUsage];
+        
+        NSMenuItem *itemVRAM = [[NSMenuItem alloc] initWithTitle:@"VRAM Usage" action:@selector(selectedGPUVisualization:) keyEquivalent:@""];
+        [menuVisualizations addItem:itemVRAM];
+        
+        // TODO Enable item if it was last used
+    }
     
     // Prepare serial port menu
     NSArray *ports = [Serial listSerialPorts];
@@ -138,6 +153,10 @@
 }
 
 - (void)selectedStaticColor:(NSMenuItem *)source {
+    
+}
+
+- (void)selectedGPUVisualization:(NSMenuItem *)sender {
     
 }
 
