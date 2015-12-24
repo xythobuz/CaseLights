@@ -23,12 +23,5 @@
 @property (weak) IBOutlet NSMenuItem *buttonOff;
 @property (weak) IBOutlet NSMenuItem *buttonLights;
 
-@property (strong) NSStatusItem *statusItem;
-@property (strong) NSImage *statusImage;
-
-@property (strong) NSDictionary *staticColors;
-
-@property (strong) Serial *serial;
-
 @end
 

@@ -22,13 +22,20 @@
 #define TEXT_VRAM_USAGE @"VRAM Usage"
 #define TEXT_CPU_TEMPERATURE @"CPU Temperature"
 #define TEXT_GPU_TEMPERATURE @"GPU Temperature"
+#define TEXT_RGB_FADE @"RGB Fade"
+#define TEXT_HSV_FADE @"HSV Fade"
 
 #define KEY_CPU_TEMPERATURE @"TC0D"
 #define KEY_GPU_TEMPERATURE @"TG0D"
 
 @interface AppDelegate ()
 
-@property (weak) NSMenuItem *lastLEDMode;
+@property (strong) NSStatusItem *statusItem;
+@property (strong) NSImage *statusImage;
+@property (strong) NSDictionary *staticColors;
+@property (strong) NSTimer *animation;
+@property (strong) Serial *serial;
+@property (strong) NSMenuItem *lastLEDMode;
 
 @end
 
@@ -38,12 +45,13 @@
 @synthesize menuColors, menuAnimations, menuVisualizations, menuPorts;
 @synthesize buttonOff, buttonLights;
 @synthesize statusItem, statusImage;
-@synthesize staticColors;
+@synthesize staticColors, animation;
 @synthesize serial, lastLEDMode;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     serial = [[Serial alloc] init];
     lastLEDMode = nil;
+    animation = nil;
     
     // Prepare status bar menu
     statusImage = [NSImage imageNamed:@"MenuIcon"];
@@ -110,7 +118,18 @@
         [menuColors addItem:item];
     }
     
-    // TODO Prepare animations menu
+    // Prepare animations menu
+    NSArray *animationStrings = [NSArray arrayWithObjects:
+                        TEXT_RGB_FADE,
+                        TEXT_HSV_FADE,
+                        nil];
+    for (NSString *key in animationStrings) {
+        NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:key action:@selector(selectedVisualization:) keyEquivalent:@""];
+        if ([key isEqualToString:lastMode]) {
+            [self selectedVisualization:item];
+        }
+        [menuAnimations addItem:item];
+    }
     
     JSKSystemMonitor *systemMonitor = [JSKSystemMonitor systemMonitor];
     
@@ -294,6 +313,63 @@
     [store synchronize];
 }
 
+- (void)visualizeGPUUsage:(NSTimer *)timer {
+}
+
+- (void)visualizeVRAMUsage:(NSTimer *)timer {
+}
+
+- (void)visualizeCPUUsage:(NSTimer *)timer {
+}
+
+- (void)visualizeRAMUsage:(NSTimer *)timer {
+}
+
+- (void)visualizeGPUTemperature:(NSTimer *)timer {
+}
+
+- (void)visualizeCPUTemperature:(NSTimer *)timer {
+}
+
+- (void)visualizeRGBFade:(NSTimer *)timer {
+}
+
+- (void)visualizeHSVFade:(NSTimer *)timer {
+}
+
+- (BOOL)timedVisualization:(NSString *)mode {
+    // Stop previous timer setting
+    if (animation != nil) {
+        [animation invalidate];
+        animation = nil;
+    }
+    
+    // Schedule next invocation for this animation...
+    if ([mode isEqualToString:TEXT_GPU_USAGE]) {
+        animation = [NSTimer timerWithTimeInterval:5.0 target:self selector:@selector(visualizeGPUUsage:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_VRAM_USAGE]) {
+        animation = [NSTimer timerWithTimeInterval:5.0 target:self selector:@selector(visualizeVRAMUsage:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_CPU_USAGE]) {
+        animation = [NSTimer timerWithTimeInterval:5.0 target:self selector:@selector(visualizeCPUUsage:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_RAM_USAGE]) {
+        animation = [NSTimer timerWithTimeInterval:20.0 target:self selector:@selector(visualizeRAMUsage:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_CPU_TEMPERATURE]) {
+        animation = [NSTimer timerWithTimeInterval:5.0 target:self selector:@selector(visualizeCPUTemperature:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_GPU_TEMPERATURE]) {
+        animation = [NSTimer timerWithTimeInterval:5.0 target:self selector:@selector(visualizeGPUTemperature:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_RGB_FADE]) {
+        animation = [NSTimer timerWithTimeInterval:0.1 target:self selector:@selector(visualizeRGBFade:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_HSV_FADE]) {
+        animation = [NSTimer timerWithTimeInterval:0.1 target:self selector:@selector(visualizeHSVFade:) userInfo:mode repeats:YES];
+    } else {
+        return NO;
+    }
+    
+    // ...and also execute it right now
+    [animation fire];
+    return YES;
+}
+
 - (void)selectedVisualization:(NSMenuItem *)sender {
     // Turn off all other LED menu items
     if (menuColors != nil) {
@@ -314,64 +390,44 @@
     [buttonOff setState:NSOffState];
     [sender setState:NSOnState];
     
-    if ([sender.title isEqualToString:TEXT_GPU_USAGE]) {
-        // TODO send command
-        
-    } else if ([sender.title isEqualToString:TEXT_VRAM_USAGE]) {
-        // TODO send command
-        
-    } else if ([sender.title isEqualToString:TEXT_GPU_TEMPERATURE]) {
-        // TODO send command
-        
-    } else if ([sender.title isEqualToString:TEXT_CPU_USAGE]) {
-        // TODO send command
-        
-    } else if ([sender.title isEqualToString:TEXT_CPU_TEMPERATURE]) {
-        // TODO send command
-        
-    } else if ([sender.title isEqualToString:TEXT_RAM_USAGE]) {
-        // TODO send command
-        
-    } else {
-        BOOL found = NO;
-        
-        // Check if a static color was selected
-        if (staticColors != nil) {
-            for (NSString *key in [staticColors allKeys]) {
-                if ([sender.title isEqualToString:key]) {
-                    found = YES;
-                    
-                    NSColor *color = [staticColors valueForKey:key];
-                    unsigned char red = [color redComponent] * 255;
-                    unsigned char green = [color greenComponent] * 255;
-                    unsigned char blue = [color blueComponent] * 255;
-                    NSString *string = [NSString stringWithFormat:@"RGB %d %d %d\n", red, green, blue];
-                    
-                    if ([serial isOpen]) {
-                        [serial sendString:string];
-                    }
+    // Check if a static color was selected
+    BOOL found = NO;
+    if (staticColors != nil) {
+        for (NSString *key in [staticColors allKeys]) {
+            if ([sender.title isEqualToString:key]) {
+                found = YES;
+                
+                NSColor *color = [staticColors valueForKey:key];
+                unsigned char red = [color redComponent] * 255;
+                unsigned char green = [color greenComponent] * 255;
+                unsigned char blue = [color blueComponent] * 255;
+                NSString *string = [NSString stringWithFormat:@"RGB %d %d %d\n", red, green, blue];
+                
+                if ([serial isOpen]) {
+                    [serial sendString:string];
                 }
+                
+                break;
             }
         }
-        
-        if (found) goto end_found;
-        
-        // TODO Check if an animation was selected
-        
-        NSLog(@"Unknown LED Visualization selected!\n");
-        return;
     }
-
-    end_found: {
-        // Store changed value in preferences
-        NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
-        [store setObject:[sender title] forKey:PREF_LED_MODE];
-        [store synchronize];
-        
+    
+    if (!found) {
+        // Check if an animated visualization was selected
+        if ([self timedVisualization:[sender title]] == NO) {
+            NSLog(@"Unknown LED Visualization selected!\n");
+            return;
+        }
+    }
+    
+    // Store changed value in preferences
+    NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
+    [store setObject:[sender title] forKey:PREF_LED_MODE];
+    [store synchronize];
+    
 #ifdef DEBUG
-        NSLog(@"Stored new mode: \"%@\"!\n", [sender title]);
+    NSLog(@"Stored new mode: \"%@\"!\n", [sender title]);
 #endif
-    }
 }
 
 - (void)selectedSerialPort:(NSMenuItem *)source {
@@ -398,7 +454,31 @@
     if ([serial openPort] != 0) {
         [source setState:NSOffState];
     } else {
-        // TODO Restore the current configuration
+        // Restore the current configuration
+        for (int i = 0; i < [menuColors numberOfItems]; i++) {
+            if ([[menuColors itemAtIndex:i] state] == NSOnState) {
+                [self selectedVisualization:[menuColors itemAtIndex:i]];
+            }
+        }
+        for (int i = 0; i < [menuAnimations numberOfItems]; i++) {
+            if ([[menuAnimations itemAtIndex:i] state] == NSOnState) {
+                [self selectedVisualization:[menuAnimations itemAtIndex:i]];
+            }
+        }
+        for (int i = 0; i < [menuVisualizations numberOfItems]; i++) {
+            if ([[menuVisualizations itemAtIndex:i] state] == NSOnState) {
+                [self selectedVisualization:[menuVisualizations itemAtIndex:i]];
+            }
+        }
+        if ([buttonOff state] == NSOnState) {
+            [buttonOff setState:NSOffState];
+            [self turnLEDsOff:buttonOff];
+        }
+        if ([buttonLights state] == NSOnState) {
+            [serial sendString:@"UV 1\n"];
+        } else {
+            [serial sendString:@"UV 0\n"];
+        }
     }
 }
 
