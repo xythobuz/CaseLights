@@ -152,6 +152,11 @@
     
     const char *data = [string UTF8String];
     size_t length = strlen(data);
+    
+#ifdef DEBUG
+    NSLog(@"Sending string \"%s\"...\n", data);
+#endif
+    
     ssize_t sent = 0;
     while (sent < length) {
         ssize_t ret = write(fd, data + sent, length - sent);

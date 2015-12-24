@@ -2,6 +2,9 @@
 //  GPUStats.m
 //  CaseLights
 //
+//  For more informations refer to this StackOverflow answer:
+//  http://stackoverflow.com/a/22440235
+//
 //  Created by Thomas Buck on 23.12.15.
 //  Copyright © 2015 xythobuz. All rights reserved.
 //
