@@ -61,7 +61,7 @@
 #endif
     
     // Open port read-only, without controlling terminal, non-blocking
-    fd = open([portName UTF8String], O_RDONLY | O_NOCTTY | O_NONBLOCK);
+    fd = open([portName UTF8String], O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (fd == -1) {
         NSLog(@"Error opening serial port \"%@\": %s (%d)!\n", portName, strerror(errno), errno);
         return 1;

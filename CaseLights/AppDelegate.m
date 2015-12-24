@@ -23,6 +23,9 @@
 #define TEXT_CPU_TEMPERATURE @"CPU Temperature"
 #define TEXT_GPU_TEMPERATURE @"GPU Temperature"
 
+#define KEY_CPU_TEMPERATURE @"TC0D"
+#define KEY_GPU_TEMPERATURE @"TG0D"
+
 @interface AppDelegate ()
 
 @property (weak) NSMenuItem *lastLEDMode;
@@ -60,101 +63,6 @@
     BOOL turnOnLights = [store boolForKey:PREF_LIGHTS_STATE];
     NSString *lastMode = [store stringForKey:PREF_LED_MODE];
     
-    if ([lastMode isEqualToString:@""]) {
-        [buttonOff setState:NSOnState];
-    }
-    
-    // Prepare static colors menu
-    staticColors = [NSDictionary dictionaryWithObjectsAndKeys:
-                    [NSColor colorWithCalibratedRed:1.0f green:0.0f blue:0.0f alpha:0.0f], @"Red",
-                    [NSColor colorWithCalibratedRed:0.0f green:1.0f blue:0.0f alpha:0.0f], @"Green",
-                    [NSColor colorWithCalibratedRed:0.0f green:0.0f blue:1.0f alpha:0.0f], @"Blue",
-                    [NSColor colorWithCalibratedRed:0.0f green:1.0f blue:1.0f alpha:0.0f], @"Cyan",
-                    [NSColor colorWithCalibratedRed:1.0f green:0.0f blue:1.0f alpha:0.0f], @"Magenta",
-                    [NSColor colorWithCalibratedRed:1.0f green:1.0f blue:0.0f alpha:0.0f], @"Yellow",
-                    [NSColor colorWithCalibratedRed:1.0f green:1.0f blue:1.0f alpha:0.0f], @"White",
-                    nil];
-    for (NSString *key in [staticColors allKeys]) {
-        NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:key action:@selector(selectedVisualization:) keyEquivalent:@""];
-        if ([key isEqualToString:lastMode]) {
-            [item setState:NSOnState];
-        }
-        [menuColors addItem:item];
-    }
-    
-    // TODO Prepare animations menu
-    
-    JSKSystemMonitor *systemMonitor = [JSKSystemMonitor systemMonitor];
-    
-#ifdef DEBUG
-    JSKMCPUUsageInfo cpuUsageInfo = systemMonitor.cpuUsageInfo;
-    NSLog(@"CPU Usage: %.3f%%\n", cpuUsageInfo.usage);
-    
-    JSKMMemoryUsageInfo memoryUsageInfo = systemMonitor.memoryUsageInfo;
-    NSLog(@"Memory Usage: %.2fGB Free, %.2fGB Used, %.2fGB Active, %.2fGB Inactive, %.2fGB Compressed, %.2fGB Wired\n", memoryUsageInfo.freeMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.usedMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.activeMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.inactiveMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.compressedMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.wiredMemory / (1024.0 * 1024.0 * 1024.0));
-#endif
-    
-    // Add CPU Usage menu item
-    NSMenuItem *cpuUsageItem = [[NSMenuItem alloc] initWithTitle:TEXT_CPU_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
-    if ([lastMode isEqualToString:TEXT_CPU_USAGE]) {
-        [cpuUsageItem setState:NSOnState];
-    }
-    [menuVisualizations addItem:cpuUsageItem];
-    
-    // Add Memory Usage item
-    NSMenuItem *memoryUsageItem = [[NSMenuItem alloc] initWithTitle:TEXT_RAM_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
-    if ([lastMode isEqualToString:TEXT_RAM_USAGE]) {
-        [memoryUsageItem setState:NSOnState];
-    }
-    [menuVisualizations addItem:memoryUsageItem];
-    
-    // Check if GPU Stats are available, add menu items if so
-    NSNumber *usage;
-    NSNumber *freeVRAM;
-    NSNumber *usedVRAM;
-    if ([GPUStats getGPUUsage:&usage freeVRAM:&freeVRAM usedVRAM:&usedVRAM] != 0) {
-        NSLog(@"Error reading GPU information\n");
-    } else {
-        NSMenuItem *itemUsage = [[NSMenuItem alloc] initWithTitle:TEXT_GPU_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
-        if ([lastMode isEqualToString:TEXT_GPU_USAGE]) {
-            [itemUsage setState:NSOnState];
-        }
-        [menuVisualizations addItem:itemUsage];
-        
-        NSMenuItem *itemVRAM = [[NSMenuItem alloc] initWithTitle:TEXT_VRAM_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
-        if ([lastMode isEqualToString:TEXT_VRAM_USAGE]) {
-            [itemVRAM setState:NSOnState];
-        }
-        [menuVisualizations addItem:itemVRAM];
-    }
-    
-    // Check available temperatures and add menu items
-    JSKSMC *smc = [JSKSMC smc];
-    for (int i = 0; i < [[smc workingTempKeys] count]; i++) {
-        NSString *key = [smc.workingTempKeys objectAtIndex:i];
-        
-#ifdef DEBUG
-        NSString *name = [smc humanReadableNameForKey:key];
-        NSLog(@"Sensor \"%@\": \"%@\"\n", key, name);
-#endif
-        
-        if ([key isEqualToString:@"TC0D"]) {
-            NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:TEXT_CPU_TEMPERATURE action:@selector(selectedVisualization:) keyEquivalent:@""];
-            if ([lastMode isEqualToString:TEXT_CPU_TEMPERATURE]) {
-                [item setState:NSOnState];
-            }
-            [menuVisualizations addItem:item];
-        }
-        
-        if ([key isEqualToString:@"TG0D"]) {
-            NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:TEXT_GPU_TEMPERATURE action:@selector(selectedVisualization:) keyEquivalent:@""];
-            if ([lastMode isEqualToString:TEXT_GPU_TEMPERATURE]) {
-                [item setState:NSOnState];
-            }
-            [menuVisualizations addItem:item];
-        }
-    }
-    
     // Prepare serial port menu
     NSArray *ports = [Serial listSerialPorts];
     if ([ports count] > 0) {
@@ -178,17 +86,117 @@
         }
     }
     
+    // Select "Off" button if it was last selected
+    if ([lastMode isEqualToString:@""]) {
+        [buttonOff setState:NSOffState];
+        [self turnLEDsOff:buttonOff];
+    }
+    
+    // Prepare static colors menu
+    staticColors = [NSDictionary dictionaryWithObjectsAndKeys:
+                    [NSColor colorWithCalibratedRed:1.0f green:0.0f blue:0.0f alpha:0.0f], @"Red",
+                    [NSColor colorWithCalibratedRed:0.0f green:1.0f blue:0.0f alpha:0.0f], @"Green",
+                    [NSColor colorWithCalibratedRed:0.0f green:0.0f blue:1.0f alpha:0.0f], @"Blue",
+                    [NSColor colorWithCalibratedRed:0.0f green:1.0f blue:1.0f alpha:0.0f], @"Cyan",
+                    [NSColor colorWithCalibratedRed:1.0f green:0.0f blue:1.0f alpha:0.0f], @"Magenta",
+                    [NSColor colorWithCalibratedRed:1.0f green:1.0f blue:0.0f alpha:0.0f], @"Yellow",
+                    [NSColor colorWithCalibratedRed:1.0f green:1.0f blue:1.0f alpha:0.0f], @"White",
+                    nil];
+    for (NSString *key in [staticColors allKeys]) {
+        NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:key action:@selector(selectedVisualization:) keyEquivalent:@""];
+        if ([key isEqualToString:lastMode]) {
+            [self selectedVisualization:item];
+        }
+        [menuColors addItem:item];
+    }
+    
+    // TODO Prepare animations menu
+    
+    JSKSystemMonitor *systemMonitor = [JSKSystemMonitor systemMonitor];
+    
+#ifdef DEBUG
+    JSKMCPUUsageInfo cpuUsageInfo = systemMonitor.cpuUsageInfo;
+    NSLog(@"CPU Usage: %.3f%%\n", cpuUsageInfo.usage);
+    
+    JSKMMemoryUsageInfo memoryUsageInfo = systemMonitor.memoryUsageInfo;
+    NSLog(@"Memory Usage: %.2fGB Free + %.2fGB Used = %.2fGB\n", memoryUsageInfo.freeMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.usedMemory / (1024.0 * 1024.0 * 1024.0), (memoryUsageInfo.freeMemory + memoryUsageInfo.usedMemory) / (1024.0 * 1024.0 * 1024.0));
+#endif
+    
+    // Add CPU Usage menu item
+    NSMenuItem *cpuUsageItem = [[NSMenuItem alloc] initWithTitle:TEXT_CPU_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
+    if ([lastMode isEqualToString:TEXT_CPU_USAGE]) {
+        [self selectedVisualization:cpuUsageItem];
+    }
+    [menuVisualizations addItem:cpuUsageItem];
+    
+    // Add Memory Usage item
+    NSMenuItem *memoryUsageItem = [[NSMenuItem alloc] initWithTitle:TEXT_RAM_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
+    if ([lastMode isEqualToString:TEXT_RAM_USAGE]) {
+        [self selectedVisualization:memoryUsageItem];
+    }
+    [menuVisualizations addItem:memoryUsageItem];
+    
+    // Check if GPU Stats are available, add menu items if so
+    NSNumber *usage;
+    NSNumber *freeVRAM;
+    NSNumber *usedVRAM;
+    if ([GPUStats getGPUUsage:&usage freeVRAM:&freeVRAM usedVRAM:&usedVRAM] != 0) {
+        NSLog(@"Error reading GPU information\n");
+    } else {
+        NSMenuItem *itemUsage = [[NSMenuItem alloc] initWithTitle:TEXT_GPU_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
+        if ([lastMode isEqualToString:TEXT_GPU_USAGE]) {
+            [self selectedVisualization:itemUsage];
+        }
+        [menuVisualizations addItem:itemUsage];
+        
+        NSMenuItem *itemVRAM = [[NSMenuItem alloc] initWithTitle:TEXT_VRAM_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
+        if ([lastMode isEqualToString:TEXT_VRAM_USAGE]) {
+            [self selectedVisualization:itemVRAM];
+        }
+        [menuVisualizations addItem:itemVRAM];
+    }
+    
+    // Check available temperatures and add menu items
+    JSKSMC *smc = [JSKSMC smc];
+    for (int i = 0; i < [[smc workingTempKeys] count]; i++) {
+        NSString *key = [smc.workingTempKeys objectAtIndex:i];
+        
+#ifdef DEBUG
+        NSString *name = [smc humanReadableNameForKey:key];
+        NSLog(@"Sensor \"%@\": \"%@\"\n", key, name);
+#endif
+
+        if ([key isEqualToString:KEY_CPU_TEMPERATURE]) {
+            NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:TEXT_CPU_TEMPERATURE action:@selector(selectedVisualization:) keyEquivalent:@""];
+            if ([lastMode isEqualToString:TEXT_CPU_TEMPERATURE]) {
+                [self selectedVisualization:item];
+            }
+            [menuVisualizations addItem:item];
+        }
+        
+        if ([key isEqualToString:KEY_GPU_TEMPERATURE]) {
+            NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:TEXT_GPU_TEMPERATURE action:@selector(selectedVisualization:) keyEquivalent:@""];
+            if ([lastMode isEqualToString:TEXT_GPU_TEMPERATURE]) {
+                [self selectedVisualization:item];
+            }
+            [menuVisualizations addItem:item];
+        }
+    }
+    
     // Restore previously used lights configuration
     if (turnOnLights) {
-        // TODO Turn on lights
+        // Turn on lights
+        if ([serial isOpen]) {
+            [serial sendString:@"UV 1\n"];
+        }
         
         [buttonLights setState:NSOnState];
     } else {
-        // TODO Turn off lights
-        
+        // Turn off lights
+        if ([serial isOpen]) {
+            [serial sendString:@"UV 0\n"];
+        }
     }
-    
-    // TODO Restore previously used LED configuration
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
@@ -248,10 +256,13 @@
         [store synchronize];
         
 #ifdef DEBUG
-        NSLog(@"Stored new mode: \"\"!\n");
+        NSLog(@"Stored new mode: \"off\"!\n");
 #endif
         
-        // TODO Send command to turn off LEDs
+        // Send command to turn off LEDs
+        if ([serial isOpen]) {
+            [serial sendString:@"RGB 0 0 0\n"];
+        }
     } else {
         // Try to restore last LED setting
         if (lastLEDMode != nil) {
@@ -262,11 +273,17 @@
 
 - (IBAction)toggleLights:(NSMenuItem *)sender {
     if ([sender state] == NSOffState) {
-        // TODO Turn on lights
+        // Turn on lights
+        if ([serial isOpen]) {
+            [serial sendString:@"UV 1\n"];
+        }
         
         [sender setState:NSOnState];
     } else {
-        // TODO Turn off lights
+        // Turn off lights
+        if ([serial isOpen]) {
+            [serial sendString:@"UV 0\n"];
+        }
         
         [sender setState:NSOffState];
     }
@@ -279,56 +296,61 @@
 
 - (void)selectedVisualization:(NSMenuItem *)sender {
     // Turn off all other LED menu items
-    for (int i = 0; i < [menuColors numberOfItems]; i++) {
-        [[menuColors itemAtIndex:i] setState:NSOffState];
+    if (menuColors != nil) {
+        for (int i = 0; i < [menuColors numberOfItems]; i++) {
+            [[menuColors itemAtIndex:i] setState:NSOffState];
+        }
     }
-    for (int i = 0; i < [menuAnimations numberOfItems]; i++) {
-        [[menuAnimations itemAtIndex:i] setState:NSOffState];
+    if (menuAnimations != nil) {
+        for (int i = 0; i < [menuAnimations numberOfItems]; i++) {
+            [[menuAnimations itemAtIndex:i] setState:NSOffState];
+        }
     }
-    for (int i = 0; i < [menuVisualizations numberOfItems]; i++) {
-        [[menuVisualizations itemAtIndex:i] setState:NSOffState];
+    if (menuVisualizations != nil) {
+        for (int i = 0; i < [menuVisualizations numberOfItems]; i++) {
+            [[menuVisualizations itemAtIndex:i] setState:NSOffState];
+        }
     }
     [buttonOff setState:NSOffState];
     [sender setState:NSOnState];
     
     if ([sender.title isEqualToString:TEXT_GPU_USAGE]) {
-        // TODO store new selection
-        
         // TODO send command
+        
     } else if ([sender.title isEqualToString:TEXT_VRAM_USAGE]) {
-        // TODO store new selection
-        
         // TODO send command
+        
     } else if ([sender.title isEqualToString:TEXT_GPU_TEMPERATURE]) {
-        // TODO store new selection
-        
         // TODO send command
+        
     } else if ([sender.title isEqualToString:TEXT_CPU_USAGE]) {
-        // TODO store new selection
-        
         // TODO send command
-    } else if ([sender.title isEqualToString:TEXT_CPU_TEMPERATURE]) {
-        // TODO store new selection
         
+    } else if ([sender.title isEqualToString:TEXT_CPU_TEMPERATURE]) {
         // TODO send command
         
     } else if ([sender.title isEqualToString:TEXT_RAM_USAGE]) {
-        // TODO store new selection
-        
         // TODO send command
         
     } else {
         BOOL found = NO;
         
         // Check if a static color was selected
-        for (NSString *key in [staticColors allKeys]) {
-            if ([sender.title isEqualToString:key]) {
-                found = YES;
-                
-                // TODO store new selection
-                
-                // TODO send command
-                
+        if (staticColors != nil) {
+            for (NSString *key in [staticColors allKeys]) {
+                if ([sender.title isEqualToString:key]) {
+                    found = YES;
+                    
+                    NSColor *color = [staticColors valueForKey:key];
+                    unsigned char red = [color redComponent] * 255;
+                    unsigned char green = [color greenComponent] * 255;
+                    unsigned char blue = [color blueComponent] * 255;
+                    NSString *string = [NSString stringWithFormat:@"RGB %d %d %d\n", red, green, blue];
+                    
+                    if ([serial isOpen]) {
+                        [serial sendString:string];
+                    }
+                }
             }
         }
         
