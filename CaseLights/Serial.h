@@ -1,6 +1,6 @@
 //
 //  Serial.h
-//  SerialGamepad
+//  CaseLights
 //
 //  Created by Thomas Buck on 14.12.15.
 //  Copyright © 2015 xythobuz. All rights reserved.
@@ -10,11 +10,13 @@
 
 @interface Serial : NSObject
 
-@property int fd;
 @property (strong) NSString *portName;
 
 - (NSInteger)openPort;
-- (NSInteger)hasData;
+- (void)closePort;
+- (BOOL)isOpen;
+- (BOOL)hasData;
+- (void)sendString:(NSString *)string;
 
 + (NSArray *)listSerialPorts;
 

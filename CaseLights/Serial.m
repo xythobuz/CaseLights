@@ -1,6 +1,6 @@
 //
 //  Serial.m
-//  SerialGamepad / CaseLights
+//  CaseLights
 //
 //  For more informations refer to this document:
 //  https://developer.apple.com/library/mac/documentation/DeviceDrivers/Conceptual/WorkingWSerial/WWSerial_SerialDevs/SerialDevices.html
@@ -21,12 +21,27 @@
 
 #import "Serial.h"
 
-kern_return_t findSerialPorts(io_iterator_t *matches);
-kern_return_t getSerialPortPath(io_iterator_t serialPortIterator, char **deviceFilePath, CFIndex maxPathCount, CFIndex maxPathSize);
+@interface Serial ()
+
+@property (assign) int fd;
+
++ (kern_return_t)findSerialPorts:(io_iterator_t *)matches;
++ (kern_return_t)getSerialPortPath:(io_iterator_t)serialPortIterator to:(char **)deviceFilePath with:(CFIndex)maxPathCount and:(CFIndex)maxPathSize;
+
+@end
 
 @implementation Serial
 
 @synthesize fd, portName;
+
+- (id)init {
+    self = [super init];
+    if (self != nil) {
+        fd = -1;
+        portName = nil;
+    }
+    return self;
+}
 
 - (NSInteger)openPort {
     // We need a port name
@@ -36,10 +51,14 @@ kern_return_t getSerialPortPath(io_iterator_t serialPortIterator, char **deviceF
     }
     
     // Check if there was already a port opened
-    if (fd != -1) {
+    if (fd > -1) {
         NSLog(@"Closing previously opened serial port \"%@\"!\n", portName);
         close(fd);
     }
+    
+#ifdef DEBUG
+    NSLog(@"Opening serial port \"%@\"...\n", portName);
+#endif
     
     // Open port read-only, without controlling terminal, non-blocking
     fd = open([portName UTF8String], O_RDONLY | O_NOCTTY | O_NONBLOCK);
@@ -84,21 +103,70 @@ kern_return_t getSerialPortPath(io_iterator_t serialPortIterator, char **deviceF
     return 0;
 }
 
-- (NSInteger)hasData {
+- (void)closePort {
+#ifdef DEBUG
+    NSLog(@"Closing serial port \"%@\"...\n", portName);
+#endif
+    
+    if (fd > -1) {
+        close(fd);
+    } else {
+        NSLog(@"Trying to close already closed port!\n");
+    }
+    fd = -1;
+}
+
+- (BOOL)isOpen {
+    if (fd > -1) {
+        return YES;
+    } else {
+        return NO;
+    }
+}
+
+- (BOOL)hasData {
+    if (fd < 0) {
+        NSLog(@"Error trying to poll a closed port!\n");
+        return NO;
+    }
+    
     struct pollfd fds;
     fds.fd = fd;
     fds.events = (POLLIN | POLLPRI); // Data may be read
-    if (poll(&fds, 1, 0) > 0) {
-        return 1;
+    int val = poll(&fds, 1, 0);
+    if (val > 0) {
+        return YES;
+    } else if (val == 0) {
+        return NO;
     } else {
-        return 0;
+        NSLog(@"Error polling serial port: %s (%d)!\n", strerror(errno), errno);
+        return NO;
+    }
+}
+
+- (void)sendString:(NSString *)string {
+    if (fd < 0) {
+        NSLog(@"Error trying to send to a closed port!\n");
+        return;
+    }
+    
+    const char *data = [string UTF8String];
+    size_t length = strlen(data);
+    ssize_t sent = 0;
+    while (sent < length) {
+        ssize_t ret = write(fd, data + sent, length - sent);
+        if (ret < 0) {
+            NSLog(@"Error writing to serial port: %s (%d)!\n", strerror(errno), errno);
+        } else {
+            sent += ret;
+        }
     }
 }
 
 + (NSArray *)listSerialPorts {
     // Get Iterator with all serial ports
     io_iterator_t serialPortIterator;
-    kern_return_t kernResult = findSerialPorts(&serialPortIterator);
+    kern_return_t kernResult = [Serial findSerialPorts:&serialPortIterator];
     
     // Create 2D array
     char **portList;
@@ -106,7 +174,7 @@ kern_return_t getSerialPortPath(io_iterator_t serialPortIterator, char **deviceF
     for (int i = 0; i < 100; i++) portList[i] = malloc(200 * sizeof(char));
     
     // Copy device name into C-String array
-    kernResult = getSerialPortPath(serialPortIterator, portList, 100, 200);
+    kernResult = [Serial getSerialPortPath:serialPortIterator to:portList with:100 and:200];
     IOObjectRelease(serialPortIterator);
     
     // Copy contents into NSString Array
@@ -125,9 +193,7 @@ kern_return_t getSerialPortPath(io_iterator_t serialPortIterator, char **deviceF
     return [[NSArray alloc] initWithObjects:stringList count:realCount];
 }
 
-@end
-
-kern_return_t findSerialPorts(io_iterator_t *matches) {
++ (kern_return_t)findSerialPorts:(io_iterator_t *)matches {
     kern_return_t kernResult;
     mach_port_t masterPort;
     CFMutableDictionaryRef classesToMatch;
@@ -165,7 +231,7 @@ kern_return_t findSerialPorts(io_iterator_t *matches) {
     return kernResult;
 }
 
-kern_return_t getSerialPortPath(io_iterator_t serialPortIterator, char **deviceFilePath, CFIndex maxPathCount, CFIndex maxPathSize) {
++ (kern_return_t)getSerialPortPath:(io_iterator_t)serialPortIterator to:(char **)deviceFilePath with:(CFIndex)maxPathCount and:(CFIndex)maxPathSize {
     io_object_t modemService;
     kern_return_t kernResult = KERN_FAILURE;
     CFIndex i = 0;
@@ -213,3 +279,5 @@ kern_return_t getSerialPortPath(io_iterator_t serialPortIterator, char **deviceF
     
     return kernResult;
 }
+
+@end

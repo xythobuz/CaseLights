@@ -26,8 +26,11 @@
 @synthesize buttonOff, buttonLights;
 @synthesize statusItem, statusImage;
 @synthesize staticColors;
+@synthesize serial;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+    serial = [[Serial alloc] init];
+    
     // Prepare status bar menu
     statusImage = [NSImage imageNamed:@"MenuIcon"];
     [statusImage setTemplate:YES];
@@ -138,11 +141,16 @@
             // Set Enabled if it was used the last time
             if ((savedPort != nil) && [[ports objectAtIndex:i] isEqualToString:savedPort]) {
                 [[menuPorts itemAtIndex:i] setState:NSOnState];
+                
+                // Try to open serial port
+                [serial setPortName:savedPort];
+                if ([serial openPort]) {
+                    // Unselect it when an error occured opening the port
+                    [[menuPorts itemAtIndex:i] setState:NSOffState];
+                }
             }
         }
     }
-    
-    // TODO Open serial port, if it was already specified and found
     
     // Restore previously used lights configuration
     if (turnOnLights) {
@@ -158,8 +166,27 @@
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
-    // TODO Close serial port, if it was specified and opened
-    
+    // Close serial port, if it was opened
+    if ([serial isOpen]) {
+        [serial closePort];
+    }
+}
+- (IBAction)relistSerialPorts:(id)sender {
+    // Refill port list
+    NSArray *ports = [Serial listSerialPorts];
+    [menuPorts removeAllItems];
+    for (int i = 0; i < [ports count]; i++) {
+        // Add Menu Item for this port
+        NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:[ports objectAtIndex:i] action:@selector(selectedSerialPort:) keyEquivalent:@""];
+        [menuPorts addItem:item];
+        
+        // Mark it if it is currently open
+        if ([serial isOpen]) {
+            if ([[ports objectAtIndex:i] isEqualToString:[serial portName]]) {
+                [[menuPorts itemAtIndex:i] setState:NSOnState];
+            }
+        }
+    }
 }
 
 - (IBAction)turnLEDsOff:(NSMenuItem *)sender {
@@ -328,9 +355,18 @@
     // Select only the current port
     [source setState:NSOnState];
     
-    // TODO Close previously opened port, if any
+    // Close previously opened port, if any
+    if ([serial isOpen]) {
+        [serial closePort];
+    }
     
-    // TODO Try to open selected port
+    // Try to open selected port
+    [serial setPortName:[source title]];
+    if ([serial openPort] != 0) {
+        [source setState:NSOffState];
+    } else {
+        // TODO Restore the current configuration
+    }
 }
 
 - (IBAction)showAbout:(id)sender {

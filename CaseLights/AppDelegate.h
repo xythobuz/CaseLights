@@ -8,6 +8,8 @@
 
 #import <Cocoa/Cocoa.h>
 
+@class Serial;
+
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 
 @property (weak) IBOutlet NSMenu *statusMenu;
@@ -25,6 +27,8 @@
 @property (strong) NSImage *statusImage;
 
 @property (strong) NSDictionary *staticColors;
+
+@property (strong) Serial *serial;
 
 @end
 

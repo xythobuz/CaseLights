@@ -710,6 +710,12 @@
                         </items>
                     </menu>
                 </menuItem>
+                <menuItem title="Relist Serial Ports" id="jVd-gl-Z6F">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <connections>
+                        <action selector="relistSerialPorts:" target="Voe-Tx-rLC" id="iFU-PL-xR8"/>
+                    </connections>
+                </menuItem>
                 <menuItem title="About CaseLights" id="GeK-ey-XEn">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
