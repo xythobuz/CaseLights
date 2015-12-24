@@ -13,12 +13,87 @@
 #import <IOKit/IOKitLib.h>
 #import <IOKit/serial/IOSerialKeys.h>
 
+#import <termios.h>
+#import <fcntl.h>
+#import <unistd.h>
+#import <poll.h>
+#import <sys/ioctl.h>
+
 #import "Serial.h"
 
 kern_return_t findSerialPorts(io_iterator_t *matches);
 kern_return_t getSerialPortPath(io_iterator_t serialPortIterator, char **deviceFilePath, CFIndex maxPathCount, CFIndex maxPathSize);
 
 @implementation Serial
+
+@synthesize fd, portName;
+
+- (NSInteger)openPort {
+    // We need a port name
+    if (portName == nil) {
+        NSLog(@"Can't open serial port without name!\n");
+        return 1;
+    }
+    
+    // Check if there was already a port opened
+    if (fd != -1) {
+        NSLog(@"Closing previously opened serial port \"%@\"!\n", portName);
+        close(fd);
+    }
+    
+    // Open port read-only, without controlling terminal, non-blocking
+    fd = open([portName UTF8String], O_RDONLY | O_NOCTTY | O_NONBLOCK);
+    if (fd == -1) {
+        NSLog(@"Error opening serial port \"%@\": %s (%d)!\n", portName, strerror(errno), errno);
+        return 1;
+    }
+    
+    // Prevent additional opens except by root-owned processes
+    if (ioctl(fd, TIOCEXCL) == -1) {
+        NSLog(@"Error enabling exclusive access on \"%@\": %s (%d)!\n", portName, strerror(errno), errno);
+        return 1;
+    }
+    
+    fcntl(fd, F_SETFL, 0); // Enable blocking I/O
+    
+    // Read current settings
+    struct termios options;
+    tcgetattr(fd, &options);
+    
+    // Clear all settings
+    options.c_lflag = 0;
+    options.c_oflag = 0;
+    options.c_iflag = 0;
+    options.c_cflag = 0;
+    
+    options.c_cflag |= CS8; // 8 data bits
+    options.c_cflag |= CREAD; // Enable receiver
+    options.c_cflag |= CLOCAL; // Ignore modem status lines
+    
+    // Set Baudrate
+    cfsetispeed(&options, B115200);
+    cfsetospeed(&options, B115200);
+    
+    options.c_cc[VMIN] = 0; // Return even with zero bytes...
+    options.c_cc[VTIME] = 1; // ...but only after .1 seconds
+    
+    // Set new settings
+    tcsetattr(fd, TCSANOW, &options);
+    tcflush(fd, TCIOFLUSH);
+    
+    return 0;
+}
+
+- (NSInteger)hasData {
+    struct pollfd fds;
+    fds.fd = fd;
+    fds.events = (POLLIN | POLLPRI); // Data may be read
+    if (poll(&fds, 1, 0) > 0) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
 
 + (NSArray *)listSerialPorts {
     // Get Iterator with all serial ports

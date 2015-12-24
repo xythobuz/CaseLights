@@ -79,23 +79,15 @@
         // TODO Enable item if it was last used
     }
     
-    // Check available temperatures and add menu items
-    JSKSMC *smc = [JSKSMC smc];
-    for (int i = 0; i < [[smc workingTempKeys] count]; i++) {
-        NSString *key = [smc.workingTempKeys objectAtIndex:i];
-        //NSString *name = [smc humanReadableNameForKey:key];
-        
-        //NSLog(@"%@: %@\n", key, name);
-        
-        if ([key isEqualToString:@"TC0D"]) {
-            NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:@"CPU Temperature" action:@selector(selectedCPUVisualization:) keyEquivalent:@""];
-            [menuVisualizations addItem:item];
-            
-            // TODO enable item if it was last used
-        }
-        
-        // TODO add GPU temperature item
-    }
+    JSKSystemMonitor *systemMonitor = [JSKSystemMonitor systemMonitor];
+    
+#ifdef DEBUG
+    JSKMCPUUsageInfo cpuUsageInfo = systemMonitor.cpuUsageInfo;
+    NSLog(@"CPU Usage: %.3f%%\n", cpuUsageInfo.usage);
+    
+    JSKMMemoryUsageInfo memoryUsageInfo = systemMonitor.memoryUsageInfo;
+    NSLog(@"Memory Usage: %.2fGB Free, %.2fGB Used, %.2fGB Active, %.2fGB Inactive, %.2fGB Compressed, %.2fGB Wired\n", memoryUsageInfo.freeMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.usedMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.activeMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.inactiveMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.compressedMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.wiredMemory / (1024.0 * 1024.0 * 1024.0));
+#endif
     
     // Add CPU Usage menu item
     NSMenuItem *cpuUsageItem = [[NSMenuItem alloc] initWithTitle:@"CPU Usage" action:@selector(selectedCPUVisualization:) keyEquivalent:@""];
@@ -109,10 +101,30 @@
     
     // TODO enable item if it was last used
     
-    JSKSystemMonitor *systemMonitor = [JSKSystemMonitor systemMonitor];
-    //JSKMCPUUsageInfo cpuUsageInfo = systemMonitor.cpuUsageInfo;
-    JSKMMemoryUsageInfo memoryUsageInfo = systemMonitor.memoryUsageInfo;
-    NSLog(@"Memory Usage: %lld Free, %lld Used, %lld Active, %lld Inactive, %lld Compressed, %lld Wired\n", memoryUsageInfo.freeMemory / 1000000, memoryUsageInfo.usedMemory / 1000000, memoryUsageInfo.activeMemory / 1000000, memoryUsageInfo.inactiveMemory / 1000000, memoryUsageInfo.compressedMemory / 1000000, memoryUsageInfo.wiredMemory / 1000000);
+    // Check available temperatures and add menu items
+    JSKSMC *smc = [JSKSMC smc];
+    for (int i = 0; i < [[smc workingTempKeys] count]; i++) {
+        NSString *key = [smc.workingTempKeys objectAtIndex:i];
+        
+#ifdef DEBUG
+        NSString *name = [smc humanReadableNameForKey:key];
+        NSLog(@"Sensor \"%@\": \"%@\"\n", key, name);
+#endif
+        
+        if ([key isEqualToString:@"TC0D"]) {
+            NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:@"CPU Temperature" action:@selector(selectedCPUVisualization:) keyEquivalent:@""];
+            [menuVisualizations addItem:item];
+            
+            // TODO enable item if it was last used
+        }
+        
+        if ([key isEqualToString:@"TG0D"]) {
+            NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:@"GPU Temperature" action:@selector(selectedGPUVisualization:) keyEquivalent:@""];
+            [menuVisualizations addItem:item];
+            
+            // TODO enable item if it was last used
+        }
+    }
     
     // Prepare serial port menu
     NSArray *ports = [Serial listSerialPorts];
@@ -231,6 +243,13 @@
         
         // TODO send command
     } else if ([sender.title isEqualToString:@"VRAM Usage"]) {
+        // Turn on "off" menu item
+        [sender setState:NSOnState];
+        
+        // TODO store new selection
+        
+        // TODO send command
+    } else if ([sender.title isEqualToString:@"GPU Temperature"]) {
         // Turn on "off" menu item
         [sender setState:NSOnState];
         

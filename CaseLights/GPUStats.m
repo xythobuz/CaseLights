@@ -43,12 +43,13 @@
                         CFNumberGetValue((CFNumberRef)gpuUsage, kCFNumberSInt64Type, &gpuUsageNum);
                         CFNumberGetValue((CFNumberRef)freeVRAM, kCFNumberSInt64Type, &freeVRAMNum);
                         CFNumberGetValue((CFNumberRef)usedVRAM, kCFNumberSInt64Type, &usedVRAMNum);
-                        *usage = [NSNumber numberWithDouble:gpuUsageNum / (double)10000000];
+                        *usage = [NSNumber numberWithDouble:gpuUsageNum / 10000000.0];
                         *free = [NSNumber numberWithDouble:freeVRAMNum];
                         *used = [NSNumber numberWithDouble:usedVRAMNum];
                         
-                        //NSLog(@"GPU: %.3f%% VRAM: %.3f%%\n", gpuUsageNum / (double)10000000,
-                              //usedVRAMNum / (double)(freeVRAMNum + usedVRAMNum) * 100.0);
+#ifdef DEBUG
+                        NSLog(@"GPU: %.3f%% VRAM: %.3f%% (%.2fMB)\n", gpuUsageNum / 10000000.0, ((double)usedVRAMNum) / (freeVRAMNum + usedVRAMNum) * 100.0, (usedVRAMNum + freeVRAMNum) / (1024.0 * 1024.0));
+#endif
                     }
                 }
                 CFRelease(services);

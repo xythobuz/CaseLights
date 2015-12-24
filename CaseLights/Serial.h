@@ -10,6 +10,12 @@
 
 @interface Serial : NSObject
 
+@property int fd;
+@property (strong) NSString *portName;
+
+- (NSInteger)openPort;
+- (NSInteger)hasData;
+
 + (NSArray *)listSerialPorts;
 
 @end

@@ -11,7 +11,6 @@
 		E9109B151C2AAEFD00726111 /* SystemInfoKit.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = E9109B0B1C2AAC1B00726111 /* SystemInfoKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		E9109B191C2AAFE100726111 /* GPUStats.m in Sources */ = {isa = PBXBuildFile; fileRef = E9109B181C2AAFE100726111 /* GPUStats.m */; };
 		E9AB18011C29F8CD00BF3C51 /* Serial.m in Sources */ = {isa = PBXBuildFile; fileRef = E9AB18001C29F8CD00BF3C51 /* Serial.m */; };
-		E9AB18061C2A173500BF3C51 /* Thread.m in Sources */ = {isa = PBXBuildFile; fileRef = E9AB18051C2A173500BF3C51 /* Thread.m */; };
 		E9F13E031C28B3D3004C6B95 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = E9F13E021C28B3D3004C6B95 /* AppDelegate.m */; };
 		E9F13E061C28B3D3004C6B95 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = E9F13E051C28B3D3004C6B95 /* main.m */; };
 		E9F13E081C28B3D3004C6B95 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E9F13E071C28B3D3004C6B95 /* Assets.xcassets */; };
@@ -61,8 +60,6 @@
 		E9109B181C2AAFE100726111 /* GPUStats.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = GPUStats.m; path = CaseLights/GPUStats.m; sourceTree = "<group>"; };
 		E9AB17FF1C29F8CD00BF3C51 /* Serial.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Serial.h; path = CaseLights/Serial.h; sourceTree = "<group>"; };
 		E9AB18001C29F8CD00BF3C51 /* Serial.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Serial.m; path = CaseLights/Serial.m; sourceTree = "<group>"; };
-		E9AB18041C2A173500BF3C51 /* Thread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Thread.h; sourceTree = "<group>"; };
-		E9AB18051C2A173500BF3C51 /* Thread.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Thread.m; sourceTree = "<group>"; };
 		E9F13DFE1C28B3D3004C6B95 /* CaseLights.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CaseLights.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9F13E011C28B3D3004C6B95 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		E9F13E021C28B3D3004C6B95 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -127,8 +124,6 @@
 			children = (
 				E9F13E011C28B3D3004C6B95 /* AppDelegate.h */,
 				E9F13E021C28B3D3004C6B95 /* AppDelegate.m */,
-				E9AB18041C2A173500BF3C51 /* Thread.h */,
-				E9AB18051C2A173500BF3C51 /* Thread.m */,
 				E9109B161C2AAFA200726111 /* LowLevel */,
 				E9F13E071C28B3D3004C6B95 /* Assets.xcassets */,
 				E9F13E091C28B3D3004C6B95 /* MainMenu.xib */,
@@ -262,7 +257,6 @@
 				E9109B191C2AAFE100726111 /* GPUStats.m in Sources */,
 				E9F13E061C28B3D3004C6B95 /* main.m in Sources */,
 				E9F13E031C28B3D3004C6B95 /* AppDelegate.m in Sources */,
-				E9AB18061C2A173500BF3C51 /* Thread.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
