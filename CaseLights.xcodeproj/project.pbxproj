@@ -371,7 +371,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_BUNDLE_IDENTIFIER = de.xythobuz.CaseLights;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "JSystemInfoKit/SystemInfoKit/**";
+				USER_HEADER_SEARCH_PATHS = "JSystemInfoKit/**";
 			};
 			name = Debug;
 		};
@@ -386,7 +386,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_BUNDLE_IDENTIFIER = de.xythobuz.CaseLights;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "JSystemInfoKit/SystemInfoKit/**";
+				USER_HEADER_SEARCH_PATHS = "JSystemInfoKit/**";
 			};
 			name = Release;
 		};

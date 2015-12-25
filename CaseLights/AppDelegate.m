@@ -10,7 +10,7 @@
 #import "Serial.h"
 #import "GPUStats.h"
 
-#import <SystemInfoKit/SystemInfoKit.h>
+#import "SystemInfoKit/SystemInfoKit.h"
 
 #define PREF_SERIAL_PORT @"SerialPort"
 #define PREF_LIGHTS_STATE @"LightState"
