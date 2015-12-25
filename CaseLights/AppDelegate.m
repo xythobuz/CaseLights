@@ -15,6 +15,7 @@
 #define PREF_SERIAL_PORT @"SerialPort"
 #define PREF_LIGHTS_STATE @"LightState"
 #define PREF_LED_MODE @"LEDMode"
+#define PREF_BRIGHTNESS @"Brightness"
 
 #define TEXT_CPU_USAGE @"CPU Usage"
 #define TEXT_RAM_USAGE @"RAM Usage"
@@ -61,6 +62,7 @@
 @synthesize statusMenu, application;
 @synthesize menuColors, menuAnimations, menuVisualizations, menuPorts;
 @synthesize buttonOff, buttonLights;
+@synthesize brightnessItem, brightnessSlider, brightnessLabel;
 @synthesize statusItem, statusImage;
 @synthesize staticColors, animation;
 @synthesize serial, lastLEDMode;
@@ -84,11 +86,18 @@
     NSMutableDictionary *appDefaults = [NSMutableDictionary dictionaryWithObject:@"" forKey:PREF_SERIAL_PORT];
     [appDefaults setObject:[NSNumber numberWithBool:NO] forKey:PREF_LIGHTS_STATE];
     [appDefaults setObject:@"" forKey:PREF_LED_MODE];
+    [appDefaults setObject:[NSNumber numberWithFloat:50.0] forKey:PREF_BRIGHTNESS];
     [store registerDefaults:appDefaults];
     [store synchronize];
     NSString *savedPort = [store stringForKey:PREF_SERIAL_PORT];
     BOOL turnOnLights = [store boolForKey:PREF_LIGHTS_STATE];
     NSString *lastMode = [store stringForKey:PREF_LED_MODE];
+    float brightness = [store floatForKey:PREF_BRIGHTNESS];
+    
+    // Prepare brightness menu
+    brightnessItem.view = brightnessSlider;
+    [brightnessSlider setFloatValue:brightness];
+    [brightnessLabel setTitle:[NSString stringWithFormat:@"Value: %.0f%%", brightness]];
     
     // Prepare serial port menu
     NSArray *ports = [Serial listSerialPorts];
@@ -234,6 +243,20 @@
         [serial closePort];
     }
 }
+
+- (void)setLightsR:(unsigned char)r G:(unsigned char)g B:(unsigned char)b {
+    if ([serial isOpen]) {
+        unsigned char red = r * ([brightnessSlider floatValue] / 100.0);
+        unsigned char green = g * ([brightnessSlider floatValue] / 100.0);
+        unsigned char blue = b * ([brightnessSlider floatValue] / 100.0);
+        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", red, green, blue]];
+    } else {
+#ifdef DEBUG
+        NSLog(@"Trying to send RGB without opened port!\n");
+#endif
+    }
+}
+
 - (IBAction)relistSerialPorts:(id)sender {
     // Refill port list
     NSArray *ports = [Serial listSerialPorts];
@@ -250,6 +273,15 @@
             }
         }
     }
+}
+
+- (IBAction)brightnessMoved:(NSSlider *)sender {
+    [brightnessLabel setTitle:[NSString stringWithFormat:@"Value: %.0f%%", [sender floatValue]]];
+    
+    // Store changed value in preferences
+    NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
+    [store setObject:[NSNumber numberWithFloat:[sender floatValue]] forKey:PREF_BRIGHTNESS];
+    [store synchronize];
 }
 
 - (IBAction)turnLEDsOff:(NSMenuItem *)sender {
@@ -295,9 +327,7 @@
 #endif
         
         // Send command to turn off LEDs
-        if ([serial isOpen]) {
-            [serial sendString:@"RGB 0 0 0\n"];
-        }
+        [self setLightsR:0 G:0 B:0];
     } else {
         // Try to restore last LED setting
         if (lastLEDMode != nil) {
@@ -344,10 +374,7 @@
         
         unsigned char r, g, b;
         [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
-        
-        if ([serial isOpen]) {
-            [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
-        }
+        [self setLightsR:r G:g B:b];
     }
 }
 
@@ -366,10 +393,7 @@
         
         unsigned char r, g, b;
         [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
-        
-        if ([serial isOpen]) {
-            [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
-        }
+        [self setLightsR:r G:g B:b];
     }
 }
 
@@ -384,10 +408,7 @@
     
     unsigned char r, g, b;
     [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
-    
-    if ([serial isOpen]) {
-        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
-    }
+    [self setLightsR:r G:g B:b];
 }
 
 - (void)visualizeRAMUsage:(NSTimer *)timer {
@@ -401,10 +422,7 @@
     
     unsigned char r, g, b;
     [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
-    
-    if ([serial isOpen]) {
-        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
-    }
+    [self setLightsR:r G:g B:b];
 }
 
 - (void)visualizeGPUTemperature:(NSTimer *)timer {
@@ -431,10 +449,7 @@
     
     unsigned char r, g, b;
     [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
-    
-    if ([serial isOpen]) {
-        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
-    }
+    [self setLightsR:r G:g B:b];
 }
 
 - (void)visualizeCPUTemperature:(NSTimer *)timer {
@@ -461,10 +476,7 @@
     
     unsigned char r, g, b;
     [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
-    
-    if ([serial isOpen]) {
-        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
-    }
+    [self setLightsR:r G:g B:b];
 }
 
 - (void)visualizeRGBFade:(NSTimer *)timer {
@@ -488,16 +500,13 @@
     } else {
         dec = 0;
     }
-    
-    if ([serial isOpen]) {
-        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", color[0], color[1], color[2]]];
-    }
+    [self setLightsR:color[0] G:color[1] B:color[2]];
 }
 
 - (void)visualizeHSVFade:(NSTimer *)timer {
     static float h = 0.0;
     
-    if (h < 360.0) {
+    if (h < 359.0) {
         h += 0.5;
     } else {
         h = 0.0;
@@ -505,16 +514,11 @@
     
     unsigned char r, g, b;
     [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
-    
-    if ([serial isOpen]) {
-        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
-    }
+    [self setLightsR:r G:g B:b];
 }
 
 - (void)visualizeRandom:(NSTimer *)timer {
-    if ([serial isOpen]) {
-        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", rand() % 256, rand() % 256, rand() % 256]];
-    }
+    [self setLightsR:rand() % 256 G:rand() % 256 B:rand() % 256];
 }
 
 - (BOOL)timedVisualization:(NSString *)mode {
@@ -593,11 +597,7 @@
                 unsigned char red = [color redComponent] * 255;
                 unsigned char green = [color greenComponent] * 255;
                 unsigned char blue = [color blueComponent] * 255;
-                NSString *string = [NSString stringWithFormat:@"RGB %d %d %d\n", red, green, blue];
-                
-                if ([serial isOpen]) {
-                    [serial sendString:string];
-                }
+                [self setLightsR:red G:green B:blue];
                 
                 break;
             }

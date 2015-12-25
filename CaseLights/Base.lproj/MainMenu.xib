@@ -15,6 +15,9 @@
         <customObject id="Voe-Tx-rLC" customClass="AppDelegate">
             <connections>
                 <outlet property="application" destination="-3" id="3TG-JL-HaQ"/>
+                <outlet property="brightnessItem" destination="MYl-J7-okP" id="pON-9W-gMG"/>
+                <outlet property="brightnessLabel" destination="jtw-ZC-4zA" id="Inv-ur-QX5"/>
+                <outlet property="brightnessSlider" destination="axk-la-AqI" id="J4R-Mw-KN7"/>
                 <outlet property="buttonLights" destination="tLQ-BA-kGu" id="FZv-Ju-l7n"/>
                 <outlet property="buttonOff" destination="gT4-tm-Hvn" id="EEv-lf-Qo7"/>
                 <outlet property="menuAnimations" destination="FJm-ND-abA" id="iGI-Hg-tms"/>
@@ -693,6 +696,19 @@
                         <action selector="turnLEDsOff:" target="Voe-Tx-rLC" id="FQw-v8-IbT"/>
                     </connections>
                 </menuItem>
+                <menuItem title="Brightness" id="Oh0-1U-yDg">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="Brightness" id="jRu-sM-3xB">
+                        <items>
+                            <menuItem title="Item" id="MYl-J7-okP">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                            </menuItem>
+                            <menuItem title="Value: 50%" enabled="NO" id="jtw-ZC-4zA">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                            </menuItem>
+                        </items>
+                    </menu>
+                </menuItem>
                 <menuItem isSeparatorItem="YES" id="umI-9c-ZzN"/>
                 <menuItem title="Toggle Lights" keyEquivalent="w" id="tLQ-BA-kGu">
                     <connections>
@@ -730,5 +746,14 @@
             </items>
             <point key="canvasLocation" x="368" y="324.5"/>
         </menu>
+        <slider verticalHuggingPriority="750" id="axk-la-AqI">
+            <rect key="frame" x="0.0" y="0.0" width="129" height="30"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <sliderCell key="cell" alignment="left" maxValue="100" doubleValue="50" tickMarkPosition="below" numberOfTickMarks="11" sliderType="linear" id="IRQ-g4-OAA"/>
+            <connections>
+                <action selector="brightnessMoved:" target="Voe-Tx-rLC" id="Wxj-Xc-ZtT"/>
+            </connections>
+            <point key="canvasLocation" x="370.5" y="496.5"/>
+        </slider>
     </objects>
 </document>

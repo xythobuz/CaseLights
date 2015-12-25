@@ -21,6 +21,9 @@
 @property (weak) IBOutlet NSMenu *menuPorts;
 
 @property (weak) IBOutlet NSMenuItem *buttonOff;
+@property (weak) IBOutlet NSMenuItem *brightnessItem;
+@property (weak) IBOutlet NSSlider *brightnessSlider;
+@property (weak) IBOutlet NSMenuItem *brightnessLabel;
 @property (weak) IBOutlet NSMenuItem *buttonLights;
 
 @end
