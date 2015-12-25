@@ -278,6 +278,13 @@
 - (IBAction)brightnessMoved:(NSSlider *)sender {
     [brightnessLabel setTitle:[NSString stringWithFormat:@"Value: %.0f%%", [sender floatValue]]];
     
+    // Restore the current configuration for items where it won't happen automatically
+    for (int i = 0; i < [menuColors numberOfItems]; i++) {
+        if ([[menuColors itemAtIndex:i] state] == NSOnState) {
+            [self selectedVisualization:[menuColors itemAtIndex:i]];
+        }
+    }
+    
     // Store changed value in preferences
     NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
     [store setObject:[NSNumber numberWithFloat:[sender floatValue]] forKey:PREF_BRIGHTNESS];
@@ -358,6 +365,168 @@
     [store setBool:([sender state] == NSOnState) forKey:PREF_LIGHTS_STATE];
     [store synchronize];
 }
+
+- (BOOL)timedVisualization:(NSString *)mode {
+    // Stop previous timer setting
+    if (animation != nil) {
+        [animation invalidate];
+        animation = nil;
+    }
+    
+    // Schedule next invocation for this animation...
+    if ([mode isEqualToString:TEXT_GPU_USAGE]) {
+        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeGPUUsage:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_VRAM_USAGE]) {
+        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeVRAMUsage:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_CPU_USAGE]) {
+        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeCPUUsage:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_RAM_USAGE]) {
+        animation = [NSTimer scheduledTimerWithTimeInterval:20.0 target:self selector:@selector(visualizeRAMUsage:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_CPU_TEMPERATURE]) {
+        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeCPUTemperature:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_GPU_TEMPERATURE]) {
+        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeGPUTemperature:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_RGB_FADE]) {
+        animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeRGBFade:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_HSV_FADE]) {
+        animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeHSVFade:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_RANDOM]) {
+        animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeRandom:) userInfo:mode repeats:YES];
+    } else {
+        return NO;
+    }
+    
+#ifdef DEBUG
+    NSLog(@"Scheduled animation for \"%@\"!\n", mode);
+#endif
+    
+    // ...and also execute it right now
+    [animation fire];
+    return YES;
+}
+
+- (void)selectedVisualization:(NSMenuItem *)sender {
+    // Turn off all other LED menu items
+    if (menuColors != nil) {
+        for (int i = 0; i < [menuColors numberOfItems]; i++) {
+            [[menuColors itemAtIndex:i] setState:NSOffState];
+        }
+    }
+    if (menuAnimations != nil) {
+        for (int i = 0; i < [menuAnimations numberOfItems]; i++) {
+            [[menuAnimations itemAtIndex:i] setState:NSOffState];
+        }
+    }
+    if (menuVisualizations != nil) {
+        for (int i = 0; i < [menuVisualizations numberOfItems]; i++) {
+            [[menuVisualizations itemAtIndex:i] setState:NSOffState];
+        }
+    }
+    [buttonOff setState:NSOffState];
+    [sender setState:NSOnState];
+    
+    // Check if a static color was selected
+    BOOL found = NO;
+    if (staticColors != nil) {
+        for (NSString *key in [staticColors allKeys]) {
+            if ([sender.title isEqualToString:key]) {
+                found = YES;
+                
+                // Stop previous timer setting
+                if (animation != nil) {
+                    [animation invalidate];
+                    animation = nil;
+                }
+                
+                NSColor *color = [staticColors valueForKey:key];
+                unsigned char red = [color redComponent] * 255;
+                unsigned char green = [color greenComponent] * 255;
+                unsigned char blue = [color blueComponent] * 255;
+                [self setLightsR:red G:green B:blue];
+                
+                break;
+            }
+        }
+    }
+    
+    if (!found) {
+        // Check if an animated visualization was selected
+        if ([self timedVisualization:[sender title]] == NO) {
+            NSLog(@"Unknown LED Visualization selected!\n");
+            return;
+        }
+    }
+    
+    // Store changed value in preferences
+    NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
+    [store setObject:[sender title] forKey:PREF_LED_MODE];
+    [store synchronize];
+    
+#ifdef DEBUG
+    NSLog(@"Stored new mode: \"%@\"!\n", [sender title]);
+#endif
+}
+
+- (void)selectedSerialPort:(NSMenuItem *)source {
+    // Store selection for next start-up
+    NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
+    [store setObject:[source title] forKey:PREF_SERIAL_PORT];
+    [store synchronize];
+    
+    // De-select all other ports
+    for (int i = 0; i < [menuPorts numberOfItems]; i++) {
+        [[menuPorts itemAtIndex:i] setState:NSOffState];
+    }
+    
+    // Select only the current port
+    [source setState:NSOnState];
+    
+    // Close previously opened port, if any
+    if ([serial isOpen]) {
+        [serial closePort];
+    }
+    
+    // Try to open selected port
+    [serial setPortName:[source title]];
+    if ([serial openPort] != 0) {
+        [source setState:NSOffState];
+    } else {
+        // Restore the current configuration
+        for (int i = 0; i < [menuColors numberOfItems]; i++) {
+            if ([[menuColors itemAtIndex:i] state] == NSOnState) {
+                [self selectedVisualization:[menuColors itemAtIndex:i]];
+            }
+        }
+        for (int i = 0; i < [menuAnimations numberOfItems]; i++) {
+            if ([[menuAnimations itemAtIndex:i] state] == NSOnState) {
+                [self selectedVisualization:[menuAnimations itemAtIndex:i]];
+            }
+        }
+        for (int i = 0; i < [menuVisualizations numberOfItems]; i++) {
+            if ([[menuVisualizations itemAtIndex:i] state] == NSOnState) {
+                [self selectedVisualization:[menuVisualizations itemAtIndex:i]];
+            }
+        }
+        if ([buttonOff state] == NSOnState) {
+            [buttonOff setState:NSOffState];
+            [self turnLEDsOff:buttonOff];
+        }
+        if ([buttonLights state] == NSOnState) {
+            [serial sendString:@"UV 1\n"];
+        } else {
+            [serial sendString:@"UV 0\n"];
+        }
+    }
+}
+
+- (IBAction)showAbout:(id)sender {
+    [NSApp activateIgnoringOtherApps:YES];
+    [application orderFrontStandardAboutPanel:self];
+}
+
+// ------------------------------------------------------
+// ------------------- Visualizations -------------------
+// ------------------------------------------------------
 
 - (void)visualizeGPUUsage:(NSTimer *)timer {
     NSNumber *usage;
@@ -521,163 +690,9 @@
     [self setLightsR:rand() % 256 G:rand() % 256 B:rand() % 256];
 }
 
-- (BOOL)timedVisualization:(NSString *)mode {
-    // Stop previous timer setting
-    if (animation != nil) {
-        [animation invalidate];
-        animation = nil;
-    }
-    
-    // Schedule next invocation for this animation...
-    if ([mode isEqualToString:TEXT_GPU_USAGE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeGPUUsage:) userInfo:mode repeats:YES];
-    } else if ([mode isEqualToString:TEXT_VRAM_USAGE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeVRAMUsage:) userInfo:mode repeats:YES];
-    } else if ([mode isEqualToString:TEXT_CPU_USAGE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeCPUUsage:) userInfo:mode repeats:YES];
-    } else if ([mode isEqualToString:TEXT_RAM_USAGE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:20.0 target:self selector:@selector(visualizeRAMUsage:) userInfo:mode repeats:YES];
-    } else if ([mode isEqualToString:TEXT_CPU_TEMPERATURE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeCPUTemperature:) userInfo:mode repeats:YES];
-    } else if ([mode isEqualToString:TEXT_GPU_TEMPERATURE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeGPUTemperature:) userInfo:mode repeats:YES];
-    } else if ([mode isEqualToString:TEXT_RGB_FADE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeRGBFade:) userInfo:mode repeats:YES];
-    } else if ([mode isEqualToString:TEXT_HSV_FADE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeHSVFade:) userInfo:mode repeats:YES];
-    } else if ([mode isEqualToString:TEXT_RANDOM]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeRandom:) userInfo:mode repeats:YES];
-    } else {
-        return NO;
-    }
-    
-#ifdef DEBUG
-    NSLog(@"Scheduled animation for \"%@\"!\n", mode);
-#endif
-    
-    // ...and also execute it right now
-    [animation fire];
-    return YES;
-}
-
-- (void)selectedVisualization:(NSMenuItem *)sender {
-    // Turn off all other LED menu items
-    if (menuColors != nil) {
-        for (int i = 0; i < [menuColors numberOfItems]; i++) {
-            [[menuColors itemAtIndex:i] setState:NSOffState];
-        }
-    }
-    if (menuAnimations != nil) {
-        for (int i = 0; i < [menuAnimations numberOfItems]; i++) {
-            [[menuAnimations itemAtIndex:i] setState:NSOffState];
-        }
-    }
-    if (menuVisualizations != nil) {
-        for (int i = 0; i < [menuVisualizations numberOfItems]; i++) {
-            [[menuVisualizations itemAtIndex:i] setState:NSOffState];
-        }
-    }
-    [buttonOff setState:NSOffState];
-    [sender setState:NSOnState];
-    
-    // Check if a static color was selected
-    BOOL found = NO;
-    if (staticColors != nil) {
-        for (NSString *key in [staticColors allKeys]) {
-            if ([sender.title isEqualToString:key]) {
-                found = YES;
-                
-                // Stop previous timer setting
-                if (animation != nil) {
-                    [animation invalidate];
-                    animation = nil;
-                }
-                
-                NSColor *color = [staticColors valueForKey:key];
-                unsigned char red = [color redComponent] * 255;
-                unsigned char green = [color greenComponent] * 255;
-                unsigned char blue = [color blueComponent] * 255;
-                [self setLightsR:red G:green B:blue];
-                
-                break;
-            }
-        }
-    }
-    
-    if (!found) {
-        // Check if an animated visualization was selected
-        if ([self timedVisualization:[sender title]] == NO) {
-            NSLog(@"Unknown LED Visualization selected!\n");
-            return;
-        }
-    }
-    
-    // Store changed value in preferences
-    NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
-    [store setObject:[sender title] forKey:PREF_LED_MODE];
-    [store synchronize];
-    
-#ifdef DEBUG
-    NSLog(@"Stored new mode: \"%@\"!\n", [sender title]);
-#endif
-}
-
-- (void)selectedSerialPort:(NSMenuItem *)source {
-    // Store selection for next start-up
-    NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
-    [store setObject:[source title] forKey:PREF_SERIAL_PORT];
-    [store synchronize];
-    
-    // De-select all other ports
-    for (int i = 0; i < [menuPorts numberOfItems]; i++) {
-        [[menuPorts itemAtIndex:i] setState:NSOffState];
-    }
-    
-    // Select only the current port
-    [source setState:NSOnState];
-    
-    // Close previously opened port, if any
-    if ([serial isOpen]) {
-        [serial closePort];
-    }
-    
-    // Try to open selected port
-    [serial setPortName:[source title]];
-    if ([serial openPort] != 0) {
-        [source setState:NSOffState];
-    } else {
-        // Restore the current configuration
-        for (int i = 0; i < [menuColors numberOfItems]; i++) {
-            if ([[menuColors itemAtIndex:i] state] == NSOnState) {
-                [self selectedVisualization:[menuColors itemAtIndex:i]];
-            }
-        }
-        for (int i = 0; i < [menuAnimations numberOfItems]; i++) {
-            if ([[menuAnimations itemAtIndex:i] state] == NSOnState) {
-                [self selectedVisualization:[menuAnimations itemAtIndex:i]];
-            }
-        }
-        for (int i = 0; i < [menuVisualizations numberOfItems]; i++) {
-            if ([[menuVisualizations itemAtIndex:i] state] == NSOnState) {
-                [self selectedVisualization:[menuVisualizations itemAtIndex:i]];
-            }
-        }
-        if ([buttonOff state] == NSOnState) {
-            [buttonOff setState:NSOffState];
-            [self turnLEDsOff:buttonOff];
-        }
-        if ([buttonLights state] == NSOnState) {
-            [serial sendString:@"UV 1\n"];
-        } else {
-            [serial sendString:@"UV 0\n"];
-        }
-    }
-}
-
-- (IBAction)showAbout:(id)sender {
-    [NSApp activateIgnoringOtherApps:YES];
-    [application orderFrontStandardAboutPanel:self];
-}
+// -----------------------------------------------------
+// --------------------- Utilities ---------------------
+// -----------------------------------------------------
 
 - (double)map:(double)val FromMin:(double)fmin FromMax:(double)fmax ToMin:(double)tmin ToMax:(double)tmax {
     double norm = (val - fmin) / (fmax - fmin);
