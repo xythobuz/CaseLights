@@ -238,8 +238,9 @@
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
-    // Close serial port, if it was opened
     if ([serial isOpen]) {
+        [serial sendString:@"RGB 0 0 0\n"];
+        [serial sendString:@"UV 0\n"];
         [serial closePort];
     }
 }
