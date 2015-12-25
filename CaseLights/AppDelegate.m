@@ -24,6 +24,7 @@
 #define TEXT_GPU_TEMPERATURE @"GPU Temperature"
 #define TEXT_RGB_FADE @"RGB Fade"
 #define TEXT_HSV_FADE @"HSV Fade"
+#define TEXT_RANDOM @"Random"
 
 #define KEY_CPU_TEMPERATURE @"TC0D"
 #define KEY_GPU_TEMPERATURE @"TG0D"
@@ -49,6 +50,8 @@
 @synthesize serial, lastLEDMode;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+    srand((unsigned)time(NULL));
+    
     serial = [[Serial alloc] init];
     lastLEDMode = nil;
     animation = nil;
@@ -120,9 +123,10 @@
     
     // Prepare animations menu
     NSArray *animationStrings = [NSArray arrayWithObjects:
-                        TEXT_RGB_FADE,
-                        TEXT_HSV_FADE,
-                        nil];
+                                 TEXT_RGB_FADE,
+                                 TEXT_HSV_FADE,
+                                 TEXT_RANDOM,
+                                 nil];
     for (NSString *key in animationStrings) {
         NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:key action:@selector(selectedVisualization:) keyEquivalent:@""];
         if ([key isEqualToString:lastMode]) {
@@ -245,6 +249,12 @@
 - (IBAction)turnLEDsOff:(NSMenuItem *)sender {
     if ([sender state] == NSOffState) {
         lastLEDMode = nil;
+        
+        // Stop previous timer setting
+        if (animation != nil) {
+            [animation invalidate];
+            animation = nil;
+        }
 
         // Turn off all other LED menu items
         for (int i = 0; i < [menuColors numberOfItems]; i++) {
@@ -314,27 +324,77 @@
 }
 
 - (void)visualizeGPUUsage:(NSTimer *)timer {
+    // TODO
 }
 
 - (void)visualizeVRAMUsage:(NSTimer *)timer {
+    // TODO
 }
 
 - (void)visualizeCPUUsage:(NSTimer *)timer {
+    // TODO
 }
 
 - (void)visualizeRAMUsage:(NSTimer *)timer {
+    // TODO
 }
 
 - (void)visualizeGPUTemperature:(NSTimer *)timer {
+    // TODO
 }
 
 - (void)visualizeCPUTemperature:(NSTimer *)timer {
+    // TODO
 }
 
 - (void)visualizeRGBFade:(NSTimer *)timer {
+    static unsigned char color[3] = { 255, 0, 0 };
+    static int dec = 0;
+    static int val = 0;
+    
+    // Adapted from:
+    // https://gist.github.com/jamesotron/766994
+    
+    if (dec < 3) {
+        int inc = (dec == 2) ? 0 : (dec + 1);
+        if (val < 255) {
+            color[dec] -= 1;
+            color[inc] += 1;
+            val++;
+        } else {
+            val = 0;
+            dec++;
+        }
+    } else {
+        dec = 0;
+    }
+    
+    if ([serial isOpen]) {
+        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", color[0], color[1], color[2]]];
+    }
 }
 
 - (void)visualizeHSVFade:(NSTimer *)timer {
+    static float h = 0.0;
+    
+    if (h < 360.0) {
+        h += 0.5;
+    } else {
+        h = 0.0;
+    }
+    
+    unsigned char r, g, b;
+    [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+    
+    if ([serial isOpen]) {
+        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
+    }
+}
+
+- (void)visualizeRandom:(NSTimer *)timer {
+    if ([serial isOpen]) {
+        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", rand() % 256, rand() % 256, rand() % 256]];
+    }
 }
 
 - (BOOL)timedVisualization:(NSString *)mode {
@@ -346,24 +406,30 @@
     
     // Schedule next invocation for this animation...
     if ([mode isEqualToString:TEXT_GPU_USAGE]) {
-        animation = [NSTimer timerWithTimeInterval:5.0 target:self selector:@selector(visualizeGPUUsage:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeGPUUsage:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_VRAM_USAGE]) {
-        animation = [NSTimer timerWithTimeInterval:5.0 target:self selector:@selector(visualizeVRAMUsage:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeVRAMUsage:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_CPU_USAGE]) {
-        animation = [NSTimer timerWithTimeInterval:5.0 target:self selector:@selector(visualizeCPUUsage:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeCPUUsage:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_RAM_USAGE]) {
-        animation = [NSTimer timerWithTimeInterval:20.0 target:self selector:@selector(visualizeRAMUsage:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:20.0 target:self selector:@selector(visualizeRAMUsage:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_CPU_TEMPERATURE]) {
-        animation = [NSTimer timerWithTimeInterval:5.0 target:self selector:@selector(visualizeCPUTemperature:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeCPUTemperature:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_GPU_TEMPERATURE]) {
-        animation = [NSTimer timerWithTimeInterval:5.0 target:self selector:@selector(visualizeGPUTemperature:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeGPUTemperature:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_RGB_FADE]) {
-        animation = [NSTimer timerWithTimeInterval:0.1 target:self selector:@selector(visualizeRGBFade:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeRGBFade:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_HSV_FADE]) {
-        animation = [NSTimer timerWithTimeInterval:0.1 target:self selector:@selector(visualizeHSVFade:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeHSVFade:) userInfo:mode repeats:YES];
+    } else if ([mode isEqualToString:TEXT_RANDOM]) {
+        animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeRandom:) userInfo:mode repeats:YES];
     } else {
         return NO;
     }
+    
+#ifdef DEBUG
+    NSLog(@"Scheduled animation for \"%@\"!\n", mode);
+#endif
     
     // ...and also execute it right now
     [animation fire];
@@ -485,6 +551,62 @@
 - (IBAction)showAbout:(id)sender {
     [NSApp activateIgnoringOtherApps:YES];
     [application orderFrontStandardAboutPanel:self];
+}
+
+- (void)convertH:(double)h S:(double)s V:(double)v toR:(unsigned char *)r G:(unsigned char *)g B:(unsigned char *)b {
+    // Adapted from:
+    // https://gist.github.com/hdznrrd/656996
+    
+    if (s == 0.0) {
+        // Achromatic
+        *r = *g = *b = (unsigned char)(v * 255);
+        return;
+    }
+    
+    h /= 60; // sector 0 to 5
+    int i = floor(h);
+    double f = h - i; // factorial part of h
+    double p = v * (1 - s);
+    double q = v * (1 - s * f);
+    double t = v * (1 - s * (1 - f));
+    
+    switch (i) {
+        case 0:
+            *r = (unsigned char)round(255 * v);
+            *g = (unsigned char)round(255 * t);
+            *b = (unsigned char)round(255 * p);
+            break;
+            
+        case 1:
+            *r = (unsigned char)round(255 * q);
+            *g = (unsigned char)round(255 * v);
+            *b = (unsigned char)round(255 * p);
+            break;
+            
+        case 2:
+            *r = (unsigned char)round(255 * p);
+            *g = (unsigned char)round(255 * v);
+            *b = (unsigned char)round(255 * t);
+            break;
+            
+        case 3:
+            *r = (unsigned char)round(255 * p);
+            *g = (unsigned char)round(255 * q);
+            *b = (unsigned char)round(255 * v);
+            break;
+            
+        case 4:
+            *r = (unsigned char)round(255 * t);
+            *g = (unsigned char)round(255 * p);
+            *b = (unsigned char)round(255 * v);
+            break;
+            
+        default: case 5:
+            *r = (unsigned char)round(255 * v);
+            *g = (unsigned char)round(255 * p);
+            *b = (unsigned char)round(255 * q);
+            break;
+    }
 }
 
 @end
