@@ -2,6 +2,12 @@
 
 CaseLights is an Arduino based RGB LED controller using a simple MOSFET setup. The lights are controlled with a Mac OS X Menu Bar App that can set static colors, animations, or visualize various computer status values using the included [JSystemInfoKit](https://github.com/jBot-42/JSystemInfoKit).
 
+## Arduino Sketch
+
+You could connect pretty much any hardware. I’m using a N-Channel MOSFET Setup with IRF530 and a 10-piece RGB LED strip as well as an UV light tube.
+
+[![fritzing Schematic](https://i.imgur.com/jWLW22F.png)](https://i.imgur.com/sXAADUs.png)
+
 ## Mac OS X App
 
 The CaseLights XCode project includes the JSystemInfoKit project from the submodule in this repository. Just run `xcodebuild` on the command line or open the project in XCode and click `Run` to start the App.
