@@ -154,7 +154,7 @@
     size_t length = strlen(data);
     
 #ifdef DEBUG
-    NSLog(@"Sending string \"%s\"...\n", data);
+    NSLog(@"Sending string %s", data);
 #endif
     
     ssize_t sent = 0;

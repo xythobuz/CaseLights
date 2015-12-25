@@ -29,6 +29,22 @@
 #define KEY_CPU_TEMPERATURE @"TC0D"
 #define KEY_GPU_TEMPERATURE @"TG0D"
 
+// Temperature in Celsius
+#define CPU_TEMP_MIN 20
+#define CPU_TEMP_MAX 90
+
+// HSV Color (S = V = 1)
+#define CPU_COLOR_MIN 120
+#define CPU_COLOR_MAX 0
+
+#define GPU_TEMP_MIN 20
+#define GPU_TEMP_MAX 90
+#define GPU_COLOR_MIN 120
+#define GPU_COLOR_MAX 0
+
+#define RAM_COLOR_MIN 0
+#define RAM_COLOR_MAX 120
+
 @interface AppDelegate ()
 
 @property (strong) NSStatusItem *statusItem;
@@ -134,16 +150,6 @@
         }
         [menuAnimations addItem:item];
     }
-    
-    JSKSystemMonitor *systemMonitor = [JSKSystemMonitor systemMonitor];
-    
-#ifdef DEBUG
-    JSKMCPUUsageInfo cpuUsageInfo = systemMonitor.cpuUsageInfo;
-    NSLog(@"CPU Usage: %.3f%%\n", cpuUsageInfo.usage);
-    
-    JSKMMemoryUsageInfo memoryUsageInfo = systemMonitor.memoryUsageInfo;
-    NSLog(@"Memory Usage: %.2fGB Free + %.2fGB Used = %.2fGB\n", memoryUsageInfo.freeMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.usedMemory / (1024.0 * 1024.0 * 1024.0), (memoryUsageInfo.freeMemory + memoryUsageInfo.usedMemory) / (1024.0 * 1024.0 * 1024.0));
-#endif
     
     // Add CPU Usage menu item
     NSMenuItem *cpuUsageItem = [[NSMenuItem alloc] initWithTitle:TEXT_CPU_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
@@ -324,27 +330,141 @@
 }
 
 - (void)visualizeGPUUsage:(NSTimer *)timer {
-    // TODO
+    NSNumber *usage;
+    NSNumber *freeVRAM;
+    NSNumber *usedVRAM;
+    if ([GPUStats getGPUUsage:&usage freeVRAM:&freeVRAM usedVRAM:&usedVRAM] != 0) {
+        NSLog(@"Error reading GPU information\n");
+    } else {
+        double h = [self map:[usage doubleValue] FromMin:0.0 FromMax:100.0 ToMin:GPU_COLOR_MIN ToMax:GPU_COLOR_MAX];
+        
+#ifdef DEBUG
+        NSLog(@"GPU Usage: %.3f%%\n", [usage doubleValue]);
+#endif
+        
+        unsigned char r, g, b;
+        [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+        
+        if ([serial isOpen]) {
+            [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
+        }
+    }
 }
 
 - (void)visualizeVRAMUsage:(NSTimer *)timer {
-    // TODO
+    NSNumber *usage;
+    NSNumber *freeVRAM;
+    NSNumber *usedVRAM;
+    if ([GPUStats getGPUUsage:&usage freeVRAM:&freeVRAM usedVRAM:&usedVRAM] != 0) {
+        NSLog(@"Error reading GPU information\n");
+    } else {
+        double h = [self map:[freeVRAM doubleValue] FromMin:0.0 FromMax:([freeVRAM doubleValue] + [usedVRAM doubleValue]) ToMin:RAM_COLOR_MIN ToMax:RAM_COLOR_MAX];
+        
+#ifdef DEBUG
+        NSLog(@"VRAM %.2fGB Free + %.2fGB Used = %.2fGB mapped to color %.2f!\n", [freeVRAM doubleValue] / (1024.0 * 1024.0 * 1024.0), [usedVRAM doubleValue] / (1024.0 * 1024.0 * 1024.0), ([freeVRAM doubleValue] + [usedVRAM doubleValue]) / (1024.0 * 1024.0 * 1024.0), h);
+#endif
+        
+        unsigned char r, g, b;
+        [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+        
+        if ([serial isOpen]) {
+            [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
+        }
+    }
 }
 
 - (void)visualizeCPUUsage:(NSTimer *)timer {
-    // TODO
+    JSKMCPUUsageInfo cpuUsageInfo = [JSKSystemMonitor systemMonitor].cpuUsageInfo;
+    
+    double h = [self map:cpuUsageInfo.usage FromMin:0.0 FromMax:100.0 ToMin:CPU_COLOR_MIN ToMax:CPU_COLOR_MAX];
+    
+#ifdef DEBUG
+    NSLog(@"CPU Usage: %.3f%%\n", cpuUsageInfo.usage);
+#endif
+    
+    unsigned char r, g, b;
+    [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+    
+    if ([serial isOpen]) {
+        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
+    }
 }
 
 - (void)visualizeRAMUsage:(NSTimer *)timer {
-    // TODO
+    JSKMMemoryUsageInfo memoryUsageInfo = [JSKSystemMonitor systemMonitor].memoryUsageInfo;
+    
+    double h = [self map:memoryUsageInfo.freeMemory FromMin:0.0 FromMax:(memoryUsageInfo.usedMemory + memoryUsageInfo.freeMemory) ToMin:RAM_COLOR_MIN ToMax:RAM_COLOR_MAX];
+    
+#ifdef DEBUG
+    NSLog(@"RAM %.2fGB Free + %.2fGB Used = %.2fGB mapped to color %.2f!\n", memoryUsageInfo.freeMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.usedMemory / (1024.0 * 1024.0 * 1024.0), (memoryUsageInfo.freeMemory + memoryUsageInfo.usedMemory) / (1024.0 * 1024.0 * 1024.0), h);
+#endif
+    
+    unsigned char r, g, b;
+    [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+    
+    if ([serial isOpen]) {
+        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
+    }
 }
 
 - (void)visualizeGPUTemperature:(NSTimer *)timer {
-    // TODO
+    JSKSMC *smc = [JSKSMC smc];
+    double temp = [smc temperatureInCelsiusForKey:KEY_GPU_TEMPERATURE];
+    
+    if (temp > 1000.0) {
+        temp /= 1000.0;
+    }
+    
+    if (temp > GPU_TEMP_MAX) {
+        temp = GPU_TEMP_MAX;
+    }
+    
+    if (temp < GPU_TEMP_MIN) {
+        temp = GPU_TEMP_MIN;
+    }
+    
+    double h = [self map:temp FromMin:GPU_TEMP_MIN FromMax:GPU_TEMP_MAX ToMin:GPU_COLOR_MIN ToMax:GPU_COLOR_MAX];
+    
+#ifdef DEBUG
+    NSLog(@"GPU Temp %.2f mapped to color %.2f!\n", temp, h);
+#endif
+    
+    unsigned char r, g, b;
+    [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+    
+    if ([serial isOpen]) {
+        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
+    }
 }
 
 - (void)visualizeCPUTemperature:(NSTimer *)timer {
-    // TODO
+    JSKSMC *smc = [JSKSMC smc];
+    double temp = [smc temperatureInCelsiusForKey:KEY_CPU_TEMPERATURE];
+    
+    if (temp > 1000.0) {
+        temp /= 1000.0;
+    }
+    
+    if (temp > CPU_TEMP_MAX) {
+        temp = CPU_TEMP_MAX;
+    }
+    
+    if (temp < CPU_TEMP_MIN) {
+        temp = CPU_TEMP_MIN;
+    }
+    
+    double h = [self map:temp FromMin:CPU_TEMP_MIN FromMax:CPU_TEMP_MAX ToMin:CPU_COLOR_MIN ToMax:CPU_COLOR_MAX];
+    
+#ifdef DEBUG
+    NSLog(@"CPU Temp %.2f mapped to color %.2f!\n", temp, h);
+#endif
+    
+    unsigned char r, g, b;
+    [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+    
+    if ([serial isOpen]) {
+        [serial sendString:[NSString stringWithFormat:@"RGB %d %d %d\n", r, g, b]];
+    }
 }
 
 - (void)visualizeRGBFade:(NSTimer *)timer {
@@ -551,6 +671,11 @@
 - (IBAction)showAbout:(id)sender {
     [NSApp activateIgnoringOtherApps:YES];
     [application orderFrontStandardAboutPanel:self];
+}
+
+- (double)map:(double)val FromMin:(double)fmin FromMax:(double)fmax ToMin:(double)tmin ToMax:(double)tmax {
+    double norm = (val - fmin) / (fmax - fmin);
+    return (norm * (tmax - tmin)) + tmin;
 }
 
 - (void)convertH:(double)h S:(double)s V:(double)v toR:(unsigned char *)r G:(unsigned char *)g B:(unsigned char *)b {

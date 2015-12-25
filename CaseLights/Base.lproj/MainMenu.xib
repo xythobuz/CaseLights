@@ -694,7 +694,7 @@
                     </connections>
                 </menuItem>
                 <menuItem isSeparatorItem="YES" id="umI-9c-ZzN"/>
-                <menuItem title="UV Lights" keyEquivalent="w" id="tLQ-BA-kGu">
+                <menuItem title="Toggle Lights" keyEquivalent="w" id="tLQ-BA-kGu">
                     <connections>
                         <action selector="toggleLights:" target="Voe-Tx-rLC" id="eLZ-43-xtu"/>
                     </connections>
