@@ -216,7 +216,7 @@
     } else {
         CFDictionarySetValue(classesToMatch,
                              CFSTR(kIOSerialBSDTypeKey),
-                             CFSTR(kIOSerialBSDRS232Type));
+                             CFSTR(kIOSerialBSDAllTypes));
         
         // Each serial device object has a property with key
         // kIOSerialBSDTypeKey and a value that is one of

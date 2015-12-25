@@ -583,6 +583,12 @@
             if ([sender.title isEqualToString:key]) {
                 found = YES;
                 
+                // Stop previous timer setting
+                if (animation != nil) {
+                    [animation invalidate];
+                    animation = nil;
+                }
+                
                 NSColor *color = [staticColors valueForKey:key];
                 unsigned char red = [color redComponent] * 255;
                 unsigned char green = [color greenComponent] * 255;
