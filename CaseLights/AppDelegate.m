@@ -375,23 +375,23 @@
     
     // Schedule next invocation for this animation...
     if ([mode isEqualToString:TEXT_GPU_USAGE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeGPUUsage:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(visualizeGPUUsage:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_VRAM_USAGE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeVRAMUsage:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(visualizeVRAMUsage:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_CPU_USAGE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeCPUUsage:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(visualizeCPUUsage:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_RAM_USAGE]) {
         animation = [NSTimer scheduledTimerWithTimeInterval:20.0 target:self selector:@selector(visualizeRAMUsage:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_CPU_TEMPERATURE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeCPUTemperature:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(visualizeCPUTemperature:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_GPU_TEMPERATURE]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:5.0 target:self selector:@selector(visualizeGPUTemperature:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(visualizeGPUTemperature:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_RGB_FADE]) {
         animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeRGBFade:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_HSV_FADE]) {
         animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeHSVFade:) userInfo:mode repeats:YES];
     } else if ([mode isEqualToString:TEXT_RANDOM]) {
-        animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeRandom:) userInfo:mode repeats:YES];
+        animation = [NSTimer scheduledTimerWithTimeInterval:0.25 target:self selector:@selector(visualizeRandom:) userInfo:mode repeats:YES];
     } else {
         return NO;
     }

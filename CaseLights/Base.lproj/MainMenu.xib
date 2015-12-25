@@ -691,11 +691,6 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Visualizations" id="yZl-ae-7SI"/>
                 </menuItem>
-                <menuItem title="Turn LEDs off" keyEquivalent="e" id="gT4-tm-Hvn">
-                    <connections>
-                        <action selector="turnLEDsOff:" target="Voe-Tx-rLC" id="FQw-v8-IbT"/>
-                    </connections>
-                </menuItem>
                 <menuItem title="Brightness" id="Oh0-1U-yDg">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Brightness" id="jRu-sM-3xB">
@@ -708,6 +703,11 @@
                             </menuItem>
                         </items>
                     </menu>
+                </menuItem>
+                <menuItem title="Turn LEDs off" keyEquivalent="e" id="gT4-tm-Hvn">
+                    <connections>
+                        <action selector="turnLEDsOff:" target="Voe-Tx-rLC" id="FQw-v8-IbT"/>
+                    </connections>
                 </menuItem>
                 <menuItem isSeparatorItem="YES" id="umI-9c-ZzN"/>
                 <menuItem title="Toggle Lights" keyEquivalent="w" id="tLQ-BA-kGu">
