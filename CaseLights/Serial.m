@@ -21,6 +21,8 @@
 
 #import "Serial.h"
 
+#define MAX_SEND_ERRORS 10
+
 @interface Serial ()
 
 @property (assign) int fd;
@@ -157,11 +159,19 @@
     NSLog(@"Sending string %s", data);
 #endif
     
+    int errorCount = 0;
     ssize_t sent = 0;
     while (sent < length) {
         ssize_t ret = write(fd, data + sent, length - sent);
         if (ret < 0) {
             NSLog(@"Error writing to serial port: %s (%d)!\n", strerror(errno), errno);
+            errorCount++;
+            if (errorCount >= MAX_SEND_ERRORS) {
+#ifdef DEBUG
+                NSLog(@"Too many send errors! Giving up...\n");
+#endif
+                return;
+            }
         } else {
             sent += ret;
         }

@@ -22,6 +22,8 @@
                 <outlet property="buttonOff" destination="gT4-tm-Hvn" id="EEv-lf-Qo7"/>
                 <outlet property="menuAnimations" destination="FJm-ND-abA" id="iGI-Hg-tms"/>
                 <outlet property="menuColors" destination="ZKz-ek-t6c" id="B2S-fy-Ca6"/>
+                <outlet property="menuDisplays" destination="Qgx-6D-9dl" id="MaT-c8-dLX"/>
+                <outlet property="menuItemDisplays" destination="1Cz-Xz-d16" id="rRz-n5-n2P"/>
                 <outlet property="menuPorts" destination="lFU-D0-M5p" id="pHd-AA-S3J"/>
                 <outlet property="menuVisualizations" destination="yZl-ae-7SI" id="b2b-dW-mvy"/>
                 <outlet property="statusMenu" destination="g7M-LS-DgA" id="txO-T1-8yD"/>
@@ -690,6 +692,10 @@
                 <menuItem title="Visualizations" id="Ydc-Gt-rOt">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Visualizations" id="yZl-ae-7SI"/>
+                </menuItem>
+                <menuItem title="Displays" hidden="YES" id="1Cz-Xz-d16">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="Displays" id="Qgx-6D-9dl"/>
                 </menuItem>
                 <menuItem title="Brightness" id="Oh0-1U-yDg">
                     <modifierMask key="keyEquivalentModifierMask"/>

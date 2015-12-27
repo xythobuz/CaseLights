@@ -18,6 +18,8 @@
 @property (weak) IBOutlet NSMenu *menuColors;
 @property (weak) IBOutlet NSMenu *menuAnimations;
 @property (weak) IBOutlet NSMenu *menuVisualizations;
+@property (weak) IBOutlet NSMenuItem *menuItemDisplays;
+@property (weak) IBOutlet NSMenu *menuDisplays;
 @property (weak) IBOutlet NSMenu *menuPorts;
 
 @property (weak) IBOutlet NSMenuItem *buttonOff;
@@ -25,6 +27,9 @@
 @property (weak) IBOutlet NSSlider *brightnessSlider;
 @property (weak) IBOutlet NSMenuItem *brightnessLabel;
 @property (weak) IBOutlet NSMenuItem *buttonLights;
+
+- (void)clearDisplayUI;
+- (void)updateDisplayUI:(NSArray *)displayIDs;
 
 @end
 

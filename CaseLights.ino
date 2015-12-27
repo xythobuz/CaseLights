@@ -13,7 +13,7 @@
  * The UV command turns the UV lights on or off (s can be 0 or 1).
  */
 
-#define DEBUG
+//#define DEBUG
 
 enum LoopState {
   LOOP_IDLE,

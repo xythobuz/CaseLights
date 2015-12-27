@@ -9,6 +9,7 @@
 #import "AppDelegate.h"
 #import "Serial.h"
 #import "GPUStats.h"
+#import "Screenshot.h"
 
 #import "SystemInfoKit/SystemInfoKit.h"
 
@@ -61,6 +62,7 @@
 
 @synthesize statusMenu, application;
 @synthesize menuColors, menuAnimations, menuVisualizations, menuPorts;
+@synthesize menuItemDisplays, menuDisplays;
 @synthesize buttonOff, buttonLights;
 @synthesize brightnessItem, brightnessSlider, brightnessLabel;
 @synthesize statusItem, statusImage;
@@ -106,6 +108,7 @@
         for (int i = 0; i < [ports count]; i++) {
             // Add Menu Item for this port
             NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:[ports objectAtIndex:i] action:@selector(selectedSerialPort:) keyEquivalent:@""];
+            [item setTag:-1];
             [menuPorts addItem:item];
             
             // Set Enabled if it was used the last time
@@ -140,6 +143,7 @@
                     nil];
     for (NSString *key in [staticColors allKeys]) {
         NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:key action:@selector(selectedVisualization:) keyEquivalent:@""];
+        [item setTag:-1];
         if ([key isEqualToString:lastMode]) {
             [self selectedVisualization:item];
         }
@@ -154,6 +158,7 @@
                                  nil];
     for (NSString *key in animationStrings) {
         NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:key action:@selector(selectedVisualization:) keyEquivalent:@""];
+        [item setTag:-1];
         if ([key isEqualToString:lastMode]) {
             [self selectedVisualization:item];
         }
@@ -162,6 +167,7 @@
     
     // Add CPU Usage menu item
     NSMenuItem *cpuUsageItem = [[NSMenuItem alloc] initWithTitle:TEXT_CPU_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
+    [cpuUsageItem setTag:-1];
     if ([lastMode isEqualToString:TEXT_CPU_USAGE]) {
         [self selectedVisualization:cpuUsageItem];
     }
@@ -169,6 +175,7 @@
     
     // Add Memory Usage item
     NSMenuItem *memoryUsageItem = [[NSMenuItem alloc] initWithTitle:TEXT_RAM_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
+    [memoryUsageItem setTag:-1];
     if ([lastMode isEqualToString:TEXT_RAM_USAGE]) {
         [self selectedVisualization:memoryUsageItem];
     }
@@ -182,12 +189,14 @@
         NSLog(@"Error reading GPU information\n");
     } else {
         NSMenuItem *itemUsage = [[NSMenuItem alloc] initWithTitle:TEXT_GPU_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
+        [itemUsage setTag:-1];
         if ([lastMode isEqualToString:TEXT_GPU_USAGE]) {
             [self selectedVisualization:itemUsage];
         }
         [menuVisualizations addItem:itemUsage];
         
         NSMenuItem *itemVRAM = [[NSMenuItem alloc] initWithTitle:TEXT_VRAM_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
+        [itemVRAM setTag:-1];
         if ([lastMode isEqualToString:TEXT_VRAM_USAGE]) {
             [self selectedVisualization:itemVRAM];
         }
@@ -206,6 +215,7 @@
 
         if ([key isEqualToString:KEY_CPU_TEMPERATURE]) {
             NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:TEXT_CPU_TEMPERATURE action:@selector(selectedVisualization:) keyEquivalent:@""];
+            [item setTag:-1];
             if ([lastMode isEqualToString:TEXT_CPU_TEMPERATURE]) {
                 [self selectedVisualization:item];
             }
@@ -214,6 +224,7 @@
         
         if ([key isEqualToString:KEY_GPU_TEMPERATURE]) {
             NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:TEXT_GPU_TEMPERATURE action:@selector(selectedVisualization:) keyEquivalent:@""];
+            [item setTag:-1];
             if ([lastMode isEqualToString:TEXT_GPU_TEMPERATURE]) {
                 [self selectedVisualization:item];
             }
@@ -235,13 +246,61 @@
             [serial sendString:@"UV 0\n"];
         }
     }
+    
+    // List available displays and add menu items
+    [Screenshot init:self];
+    NSArray *displayIDs = [Screenshot listDisplays];
+    [self updateDisplayUI:displayIDs];
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
+    // Stop previous timer setting
+    if (animation != nil) {
+        [animation invalidate];
+        animation = nil;
+    }
+    
+    // Remove display callback
+    [Screenshot close:self];
+    
+    // Turn off all lights if possible
     if ([serial isOpen]) {
         [serial sendString:@"RGB 0 0 0\n"];
         [serial sendString:@"UV 0\n"];
         [serial closePort];
+    }
+}
+
+- (void)clearDisplayUI {
+    for (int i = 0; i < [menuDisplays numberOfItems]; i++) {
+        if ([[menuDisplays itemAtIndex:i] isEnabled] == YES) {
+            // A display configuration is currently selected. Disable the timer
+            if (animation != nil) {
+                [animation invalidate];
+                animation = nil;
+            }
+        }
+    }
+    [menuDisplays removeAllItems];
+    [menuItemDisplays setHidden:YES];
+}
+
+- (void)updateDisplayUI:(NSArray *)displayIDs {
+    if ([displayIDs count] > 0) {
+        NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
+        NSString *lastMode = [store stringForKey:PREF_LED_MODE];
+        [menuItemDisplays setHidden:NO];
+        for (int i = 0; i < [displayIDs count]; i++) {
+            NSString *title = [Screenshot displayNameFromDisplayID:[displayIDs objectAtIndex:i]];
+            NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title
+                                                          action:@selector(selectedVisualization:)
+                                                   keyEquivalent:@""];
+            [item setTag:[[displayIDs objectAtIndex:i] integerValue]];
+            if ([title isEqualToString:lastMode]) {
+                [self selectedVisualization:item];
+            }
+            [menuDisplays addItem:item];
+        }
     }
 }
 
@@ -265,6 +324,7 @@
     for (int i = 0; i < [ports count]; i++) {
         // Add Menu Item for this port
         NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:[ports objectAtIndex:i] action:@selector(selectedSerialPort:) keyEquivalent:@""];
+        [item setTag:-1];
         [menuPorts addItem:item];
         
         // Mark it if it is currently open
@@ -320,6 +380,12 @@
                 lastLEDMode = [menuVisualizations itemAtIndex:i];
             }
             [[menuVisualizations itemAtIndex:i] setState:NSOffState];
+        }
+        for (int i = 0; i < [menuDisplays numberOfItems]; i++) {
+            if ([[menuDisplays itemAtIndex:i] state] == NSOnState) {
+                lastLEDMode = [menuDisplays itemAtIndex:i];
+            }
+            [[menuDisplays itemAtIndex:i] setState:NSOffState];
         }
         
         // Turn on "off" menu item
@@ -406,6 +472,20 @@
     return YES;
 }
 
+- (void)displayVisualization:(NSMenuItem *)sender {
+    // Stop previous timer setting
+    if (animation != nil) {
+        [animation invalidate];
+        animation = nil;
+    }
+    
+    // Schedule next invocation for this animation...
+    animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeDisplay:) userInfo:[NSNumber numberWithInteger:[sender tag]] repeats:YES];
+    
+    // ...and also execute it right now
+    [animation fire];
+}
+
 - (void)selectedVisualization:(NSMenuItem *)sender {
     // Turn off all other LED menu items
     if (menuColors != nil) {
@@ -423,12 +503,23 @@
             [[menuVisualizations itemAtIndex:i] setState:NSOffState];
         }
     }
+    if (menuDisplays != nil) {
+        for (int i = 0; i < [menuDisplays numberOfItems]; i++) {
+            [[menuDisplays itemAtIndex:i] setState:NSOffState];
+        }
+    }
     [buttonOff setState:NSOffState];
     [sender setState:NSOnState];
     
-    // Check if a static color was selected
+    // Check if it is a display
     BOOL found = NO;
-    if (staticColors != nil) {
+    if ([sender tag] > -1) {
+        found = YES;
+        [self displayVisualization:sender];
+    }
+    
+    // Check if a static color was selected
+    if ((found == NO) && (staticColors != nil)) {
         for (NSString *key in [staticColors allKeys]) {
             if ([sender.title isEqualToString:key]) {
                 found = YES;
@@ -450,7 +541,7 @@
         }
     }
     
-    if (!found) {
+    if (found == NO) {
         // Check if an animated visualization was selected
         if ([self timedVisualization:[sender title]] == NO) {
             NSLog(@"Unknown LED Visualization selected!\n");
@@ -528,6 +619,33 @@
 // ------------------------------------------------------
 // ------------------- Visualizations -------------------
 // ------------------------------------------------------
+
+- (void)visualizeDisplay:(NSTimer *)timer {
+    NSBitmapImageRep *screen = [Screenshot screenshot:[timer userInfo]];
+    
+    if ((([screen samplesPerPixel] != 3) && ([screen samplesPerPixel] != 4)) || ([screen isPlanar] == YES) || ([screen numberOfPlanes] != 1)) {
+        NSLog(@"Unknown image format (%ld, %c, %ld)!\n", (long)[screen samplesPerPixel], ([screen isPlanar] == YES) ? 'p' : 'n', (long)[screen numberOfPlanes]);
+        return;
+    }
+    
+    int redC = 0, greenC = 1, blueC = 2;
+    if ([screen bitmapFormat] & NSAlphaFirstBitmapFormat) {
+        redC = 1; greenC = 2; blueC = 3;
+    }
+    
+    unsigned char *data = [screen bitmapData];
+    unsigned long long width = [screen pixelsWide];
+    unsigned long long height = [screen pixelsHigh];
+    unsigned long long max = width * height;
+    unsigned long long red = 0, green = 0, blue = 0;
+    for (unsigned long long i = 0; i < max; i++) {
+        red += data[([screen samplesPerPixel] * i) + redC];
+        green += data[([screen samplesPerPixel] * i) + greenC];
+        blue += data[([screen samplesPerPixel] * i) + blueC];
+    }
+    
+    [self setLightsR:(red / max) G:(green / max) B:(blue / max)];
+}
 
 - (void)visualizeGPUUsage:(NSTimer *)timer {
     NSNumber *usage;
