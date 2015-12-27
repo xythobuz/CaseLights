@@ -251,7 +251,7 @@
         // incoming calls, for example, a fax listener.
         
         deviceFilePathAsCFString = IORegistryEntryCreateCFProperty(modemService,
-                                                                   CFSTR(kIODialinDeviceKey),
+                                                                   CFSTR(kIOCalloutDeviceKey),
                                                                    kCFAllocatorDefault,
                                                                    0);
         if (deviceFilePathAsCFString) {
