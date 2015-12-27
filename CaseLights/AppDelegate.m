@@ -622,9 +622,10 @@
 
 - (void)visualizeDisplay:(NSTimer *)timer {
     NSBitmapImageRep *screen = [Screenshot screenshot:[timer userInfo]];
+    NSInteger spp = [screen samplesPerPixel];
     
-    if ((([screen samplesPerPixel] != 3) && ([screen samplesPerPixel] != 4)) || ([screen isPlanar] == YES) || ([screen numberOfPlanes] != 1)) {
-        NSLog(@"Unknown image format (%ld, %c, %ld)!\n", (long)[screen samplesPerPixel], ([screen isPlanar] == YES) ? 'p' : 'n', (long)[screen numberOfPlanes]);
+    if (((spp != 3) && (spp != 4)) || ([screen isPlanar] == YES) || ([screen numberOfPlanes] != 1)) {
+        NSLog(@"Unknown image format (%ld, %c, %ld)!\n", (long)spp, ([screen isPlanar] == YES) ? 'p' : 'n', (long)[screen numberOfPlanes]);
         return;
     }
     
@@ -639,9 +640,9 @@
     unsigned long long max = width * height;
     unsigned long long red = 0, green = 0, blue = 0;
     for (unsigned long long i = 0; i < max; i++) {
-        red += data[([screen samplesPerPixel] * i) + redC];
-        green += data[([screen samplesPerPixel] * i) + greenC];
-        blue += data[([screen samplesPerPixel] * i) + blueC];
+        red += data[(spp * i) + redC];
+        green += data[(spp * i) + greenC];
+        blue += data[(spp * i) + blueC];
     }
     
     [self setLightsR:(red / max) G:(green / max) B:(blue / max)];
