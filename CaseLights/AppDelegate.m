@@ -47,6 +47,10 @@
 #define RAM_COLOR_MIN 0
 #define RAM_COLOR_MAX 120
 
+// You can play around with these values (skipped pixels, display timer delay) to change CPU usage in display mode
+#define AVERAGE_COLOR_PERFORMANCE_INC 10
+#define DISPLAY_DELAY 0.1
+
 @interface AppDelegate ()
 
 @property (strong) NSStatusItem *statusItem;
@@ -480,7 +484,7 @@
     }
     
     // Schedule next invocation for this animation...
-    animation = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(visualizeDisplay:) userInfo:[NSNumber numberWithInteger:[sender tag]] repeats:YES];
+    animation = [NSTimer scheduledTimerWithTimeInterval:DISPLAY_DELAY target:self selector:@selector(visualizeDisplay:) userInfo:[NSNumber numberWithInteger:[sender tag]] repeats:YES];
     
     // ...and also execute it right now
     [animation fire];
@@ -635,16 +639,17 @@
     }
     
     unsigned char *data = [screen bitmapData];
-    unsigned long long width = [screen pixelsWide];
-    unsigned long long height = [screen pixelsHigh];
-    unsigned long long max = width * height;
-    unsigned long long red = 0, green = 0, blue = 0;
-    for (unsigned long long i = 0; i < max; i++) {
-        red += data[(spp * i) + redC];
-        green += data[(spp * i) + greenC];
-        blue += data[(spp * i) + blueC];
+    unsigned long width = [screen pixelsWide];
+    unsigned long height = [screen pixelsHigh];
+    unsigned long max = width * height;
+    unsigned long red = 0, green = 0, blue = 0;
+    for (unsigned long i = 0; i < max; i += AVERAGE_COLOR_PERFORMANCE_INC) {
+        unsigned long off = spp * i;
+        red += data[off + redC];
+        green += data[off + greenC];
+        blue += data[off + blueC];
     }
-    
+    max /= AVERAGE_COLOR_PERFORMANCE_INC;
     [self setLightsR:(red / max) G:(green / max) B:(blue / max)];
 }
 
