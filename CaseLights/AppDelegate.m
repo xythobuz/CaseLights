@@ -409,7 +409,7 @@
     [cp setContinuous:NO];
     [cp setMode:NSRGBModeColorPanel];
     
-    // TODO Try to restore last manually selected color
+    // Try to restore last manually selected color
     NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
     NSData *lastColorData = [store dataForKey:PREF_COLOR];
     NSColor *lastColor = nil;
@@ -418,7 +418,8 @@
         [cp setColor:lastColor];
     }
     
-    [[NSApplication sharedApplication] orderFrontColorPanel:cp];
+    [NSApp activateIgnoringOtherApps:YES];
+    [application orderFrontColorPanel:cp];
 }
 
 - (void)colorSelected:(id)sender {
