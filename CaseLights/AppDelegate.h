@@ -28,6 +28,8 @@
 @property (weak) IBOutlet NSMenuItem *brightnessLabel;
 @property (weak) IBOutlet NSMenuItem *buttonLights;
 
+@property (strong) NSMenuItem *menuItemColor;
+
 - (void)clearDisplayUI;
 - (void)updateDisplayUI:(NSArray *)displayIDs;
 

@@ -17,7 +17,9 @@
 #define PREF_LIGHTS_STATE @"LightState"
 #define PREF_LED_MODE @"LEDMode"
 #define PREF_BRIGHTNESS @"Brightness"
+#define PREF_COLOR @"ManualColor"
 
+#define TEXT_MANUAL @"Select..."
 #define TEXT_CPU_USAGE @"CPU Usage"
 #define TEXT_RAM_USAGE @"RAM Usage"
 #define TEXT_GPU_USAGE @"GPU Usage"
@@ -72,6 +74,7 @@
 @synthesize statusItem, statusImage;
 @synthesize staticColors, animation;
 @synthesize serial, lastLEDMode;
+@synthesize menuItemColor;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     srand((unsigned)time(NULL));
@@ -99,6 +102,11 @@
     BOOL turnOnLights = [store boolForKey:PREF_LIGHTS_STATE];
     NSString *lastMode = [store stringForKey:PREF_LED_MODE];
     float brightness = [store floatForKey:PREF_BRIGHTNESS];
+    NSData *lastColorData = [store dataForKey:PREF_COLOR];
+    NSColor *lastColor = nil;
+    if (lastColorData != nil) {
+        lastColor = (NSColor *)[NSUnarchiver unarchiveObjectWithData:lastColorData];
+    }
     
     // Prepare brightness menu
     brightnessItem.view = brightnessSlider;
@@ -153,6 +161,16 @@
         }
         [menuColors addItem:item];
     }
+    menuItemColor = [[NSMenuItem alloc] initWithTitle:TEXT_MANUAL action:@selector(setColorSelected:) keyEquivalent:@""];
+    if ([lastMode isEqualToString:TEXT_MANUAL]) {
+        if (lastColor != nil) {
+            // Restore previously set RGB color
+            [self setLightsColor:lastColor];
+        }
+        [menuItemColor setState:NSOnState];
+    }
+    [menuItemColor setTag:-1];
+    [menuColors addItem:menuItemColor];
     
     // Prepare animations menu
     NSArray *animationStrings = [NSArray arrayWithObjects:
@@ -308,6 +326,49 @@
     }
 }
 
+- (void)setLightsColor:(NSColor *)color {
+    CGFloat red, green, blue, alpha;
+    [color getRed:&red green:&green blue:&blue alpha:&alpha];
+    [self setLightsR:red * 255 G:green * 255 B:blue * 255];
+    
+    // Stop previous timer setting
+    if (animation != nil) {
+        [animation invalidate];
+        animation = nil;
+    }
+    
+    // Turn off all other LED menu items
+    if (menuColors != nil) {
+        for (int i = 0; i < [menuColors numberOfItems]; i++) {
+            [[menuColors itemAtIndex:i] setState:NSOffState];
+        }
+    }
+    if (menuAnimations != nil) {
+        for (int i = 0; i < [menuAnimations numberOfItems]; i++) {
+            [[menuAnimations itemAtIndex:i] setState:NSOffState];
+        }
+    }
+    if (menuVisualizations != nil) {
+        for (int i = 0; i < [menuVisualizations numberOfItems]; i++) {
+            [[menuVisualizations itemAtIndex:i] setState:NSOffState];
+        }
+    }
+    if (menuDisplays != nil) {
+        for (int i = 0; i < [menuDisplays numberOfItems]; i++) {
+            [[menuDisplays itemAtIndex:i] setState:NSOffState];
+        }
+    }
+    [buttonOff setState:NSOffState];
+    [menuItemColor setState:NSOnState];
+    
+    // Store new manually selected color
+    NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
+    NSData *data = [NSArchiver archivedDataWithRootObject:color];
+    [store setObject:data forKey:PREF_COLOR];
+    [store setObject:TEXT_MANUAL forKey:PREF_LED_MODE];
+    [store synchronize];
+}
+
 - (void)setLightsR:(unsigned char)r G:(unsigned char)g B:(unsigned char)b {
     if ([serial isOpen]) {
         unsigned char red = r * ([brightnessSlider floatValue] / 100.0);
@@ -338,6 +399,30 @@
             }
         }
     }
+}
+
+- (void)setColorSelected:(NSMenuItem *)sender {
+    NSColorPanel *cp = [NSColorPanel sharedColorPanel];
+    [cp setTarget:self];
+    [cp setAction:@selector(colorSelected:)];
+    [cp setShowsAlpha:NO];
+    [cp setContinuous:NO];
+    [cp setMode:NSRGBModeColorPanel];
+    
+    // TODO Try to restore last manually selected color
+    NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
+    NSData *lastColorData = [store dataForKey:PREF_COLOR];
+    NSColor *lastColor = nil;
+    if (lastColorData != nil) {
+        lastColor = (NSColor *)[NSUnarchiver unarchiveObjectWithData:lastColorData];
+        [cp setColor:lastColor];
+    }
+    
+    [[NSApplication sharedApplication] orderFrontColorPanel:cp];
+}
+
+- (void)colorSelected:(id)sender {
+    [self setLightsColor:[sender color]];
 }
 
 - (IBAction)brightnessMoved:(NSSlider *)sender {
@@ -520,6 +605,12 @@
     if ([sender tag] > -1) {
         found = YES;
         [self displayVisualization:sender];
+    }
+    
+    // Check if it is the manual color select item
+    if ([sender.title isEqualToString:TEXT_MANUAL]) {
+        found = YES;
+        [self colorSelected:[NSColorPanel sharedColorPanel]];
     }
     
     // Check if a static color was selected
