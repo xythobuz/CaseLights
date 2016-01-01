@@ -21,8 +21,10 @@
                 <outlet property="buttonLights" destination="tLQ-BA-kGu" id="FZv-Ju-l7n"/>
                 <outlet property="buttonOff" destination="gT4-tm-Hvn" id="EEv-lf-Qo7"/>
                 <outlet property="menuAnimations" destination="FJm-ND-abA" id="iGI-Hg-tms"/>
+                <outlet property="menuAudio" destination="KUj-jy-iwd" id="ct3-CS-KXG"/>
                 <outlet property="menuColors" destination="ZKz-ek-t6c" id="B2S-fy-Ca6"/>
                 <outlet property="menuDisplays" destination="Qgx-6D-9dl" id="MaT-c8-dLX"/>
+                <outlet property="menuItemAudio" destination="gx8-7I-Lmt" id="LjY-fB-ViX"/>
                 <outlet property="menuItemDisplays" destination="1Cz-Xz-d16" id="rRz-n5-n2P"/>
                 <outlet property="menuPorts" destination="lFU-D0-M5p" id="pHd-AA-S3J"/>
                 <outlet property="menuVisualizations" destination="yZl-ae-7SI" id="b2b-dW-mvy"/>
@@ -697,6 +699,10 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Displays" id="Qgx-6D-9dl"/>
                 </menuItem>
+                <menuItem title="Audio Inputs" hidden="YES" id="gx8-7I-Lmt">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="Audio Inputs" id="KUj-jy-iwd"/>
+                </menuItem>
                 <menuItem title="Brightness" id="Oh0-1U-yDg">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Brightness" id="jRu-sM-3xB">
@@ -732,7 +738,7 @@
                         </items>
                     </menu>
                 </menuItem>
-                <menuItem title="Relist Serial Ports" id="jVd-gl-Z6F">
+                <menuItem title="Relist Devices" id="jVd-gl-Z6F">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
                         <action selector="relistSerialPorts:" target="Voe-Tx-rLC" id="iFU-PL-xR8"/>

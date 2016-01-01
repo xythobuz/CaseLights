@@ -11,10 +11,10 @@
 #import "GPUStats.h"
 #import "Screenshot.h"
 
-#import "SystemInfoKit/SystemInfoKit.h"
-
+// These are the values stored persistently in the preferences
 #define PREF_SERIAL_PORT @"SerialPort"
 #define PREF_LIGHTS_STATE @"LightState"
+// LED Mode contains the last selected mode as menu item text
 #define PREF_LED_MODE @"LEDMode"
 #define PREF_BRIGHTNESS @"Brightness"
 #define PREF_COLOR @"ManualColor"
@@ -29,7 +29,9 @@
 #define TEXT_RGB_FADE @"RGB Fade"
 #define TEXT_HSV_FADE @"HSV Fade"
 #define TEXT_RANDOM @"Random"
+#define TEXT_TEMPLATE_AUDIO @"AudioDevice_%@"
 
+// SMC keys are checked for existence and used for reading
 #define KEY_CPU_TEMPERATURE @"TC0D"
 #define KEY_GPU_TEMPERATURE @"TG0D"
 
@@ -53,6 +55,11 @@
 #define AVERAGE_COLOR_PERFORMANCE_INC 10
 #define DISPLAY_DELAY 0.1
 
+// Used to identify selected menu items
+// displays are all tags >= 0
+#define MENU_ITEM_TAG_NOTHING -1
+#define MENU_ITEM_TAG_AUDIO -2
+
 @interface AppDelegate ()
 
 @property (strong) NSStatusItem *statusItem;
@@ -61,6 +68,7 @@
 @property (strong) NSTimer *animation;
 @property (strong) Serial *serial;
 @property (strong) NSMenuItem *lastLEDMode;
+@property (strong) EZMicrophone *microphone;
 
 @end
 
@@ -69,11 +77,12 @@
 @synthesize statusMenu, application;
 @synthesize menuColors, menuAnimations, menuVisualizations, menuPorts;
 @synthesize menuItemDisplays, menuDisplays;
+@synthesize menuItemAudio, menuAudio;
 @synthesize buttonOff, buttonLights;
 @synthesize brightnessItem, brightnessSlider, brightnessLabel;
 @synthesize statusItem, statusImage;
 @synthesize staticColors, animation;
-@synthesize serial, lastLEDMode;
+@synthesize serial, lastLEDMode, microphone;
 @synthesize menuItemColor;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
@@ -82,6 +91,7 @@
     serial = [[Serial alloc] init];
     lastLEDMode = nil;
     animation = nil;
+    microphone = nil;
     
     // Prepare status bar menu
     statusImage = [NSImage imageNamed:@"MenuIcon"];
@@ -120,7 +130,7 @@
         for (int i = 0; i < [ports count]; i++) {
             // Add Menu Item for this port
             NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:[ports objectAtIndex:i] action:@selector(selectedSerialPort:) keyEquivalent:@""];
-            [item setTag:-1];
+            [item setTag:MENU_ITEM_TAG_NOTHING];
             [menuPorts addItem:item];
             
             // Set Enabled if it was used the last time
@@ -155,7 +165,7 @@
                     nil];
     for (NSString *key in [staticColors allKeys]) {
         NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:key action:@selector(selectedVisualization:) keyEquivalent:@""];
-        [item setTag:-1];
+        [item setTag:MENU_ITEM_TAG_NOTHING];
         if ([key isEqualToString:lastMode]) {
             [self selectedVisualization:item];
         }
@@ -169,7 +179,7 @@
         }
         [menuItemColor setState:NSOnState];
     }
-    [menuItemColor setTag:-1];
+    [menuItemColor setTag:MENU_ITEM_TAG_NOTHING];
     [menuColors addItem:menuItemColor];
     
     // Prepare animations menu
@@ -180,7 +190,7 @@
                                  nil];
     for (NSString *key in animationStrings) {
         NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:key action:@selector(selectedVisualization:) keyEquivalent:@""];
-        [item setTag:-1];
+        [item setTag:MENU_ITEM_TAG_NOTHING];
         if ([key isEqualToString:lastMode]) {
             [self selectedVisualization:item];
         }
@@ -189,7 +199,7 @@
     
     // Add CPU Usage menu item
     NSMenuItem *cpuUsageItem = [[NSMenuItem alloc] initWithTitle:TEXT_CPU_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
-    [cpuUsageItem setTag:-1];
+    [cpuUsageItem setTag:MENU_ITEM_TAG_NOTHING];
     if ([lastMode isEqualToString:TEXT_CPU_USAGE]) {
         [self selectedVisualization:cpuUsageItem];
     }
@@ -197,7 +207,7 @@
     
     // Add Memory Usage item
     NSMenuItem *memoryUsageItem = [[NSMenuItem alloc] initWithTitle:TEXT_RAM_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
-    [memoryUsageItem setTag:-1];
+    [memoryUsageItem setTag:MENU_ITEM_TAG_NOTHING];
     if ([lastMode isEqualToString:TEXT_RAM_USAGE]) {
         [self selectedVisualization:memoryUsageItem];
     }
@@ -211,14 +221,14 @@
         NSLog(@"Error reading GPU information\n");
     } else {
         NSMenuItem *itemUsage = [[NSMenuItem alloc] initWithTitle:TEXT_GPU_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
-        [itemUsage setTag:-1];
+        [itemUsage setTag:MENU_ITEM_TAG_NOTHING];
         if ([lastMode isEqualToString:TEXT_GPU_USAGE]) {
             [self selectedVisualization:itemUsage];
         }
         [menuVisualizations addItem:itemUsage];
         
         NSMenuItem *itemVRAM = [[NSMenuItem alloc] initWithTitle:TEXT_VRAM_USAGE action:@selector(selectedVisualization:) keyEquivalent:@""];
-        [itemVRAM setTag:-1];
+        [itemVRAM setTag:MENU_ITEM_TAG_NOTHING];
         if ([lastMode isEqualToString:TEXT_VRAM_USAGE]) {
             [self selectedVisualization:itemVRAM];
         }
@@ -237,7 +247,7 @@
 
         if ([key isEqualToString:KEY_CPU_TEMPERATURE]) {
             NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:TEXT_CPU_TEMPERATURE action:@selector(selectedVisualization:) keyEquivalent:@""];
-            [item setTag:-1];
+            [item setTag:MENU_ITEM_TAG_NOTHING];
             if ([lastMode isEqualToString:TEXT_CPU_TEMPERATURE]) {
                 [self selectedVisualization:item];
             }
@@ -246,7 +256,7 @@
         
         if ([key isEqualToString:KEY_GPU_TEMPERATURE]) {
             NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:TEXT_GPU_TEMPERATURE action:@selector(selectedVisualization:) keyEquivalent:@""];
-            [item setTag:-1];
+            [item setTag:MENU_ITEM_TAG_NOTHING];
             if ([lastMode isEqualToString:TEXT_GPU_TEMPERATURE]) {
                 [self selectedVisualization:item];
             }
@@ -273,6 +283,28 @@
     [Screenshot init:self];
     NSArray *displayIDs = [Screenshot listDisplays];
     [self updateDisplayUI:displayIDs];
+    
+    // List available audio input devices and add menu items
+    NSArray *inputDevices = [EZAudioDevice inputDevices];
+    [menuAudio removeAllItems];
+    for (int i = 0; i < [inputDevices count]; i++) {
+        EZAudioDevice *dev = [inputDevices objectAtIndex:i];
+        
+#ifdef DEBUG
+        NSLog(@"Audio input device: \"%@\"\n", [dev name]);
+#endif
+        
+        NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:[dev name] action:@selector(selectedVisualization:) keyEquivalent:@""];
+        [item setTag:MENU_ITEM_TAG_AUDIO];
+        NSString *lastModeString = [NSString stringWithFormat:TEXT_TEMPLATE_AUDIO, [dev name]];
+        if ([lastModeString isEqualToString:lastMode]) {
+            [self selectedVisualization:item];
+        }
+        [menuAudio addItem:item];
+    }
+    if ([inputDevices count] > 0) {
+        [menuItemAudio setHidden:NO];
+    }
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
@@ -280,6 +312,12 @@
     if (animation != nil) {
         [animation invalidate];
         animation = nil;
+    }
+    
+    // Stop previous audio data retrieval
+    if (microphone != nil) {
+        [microphone stopFetchingAudio];
+        microphone = nil;
     }
     
     // Remove display callback
@@ -337,6 +375,12 @@
         animation = nil;
     }
     
+    // Stop previous audio data retrieval
+    if (microphone != nil) {
+        [microphone stopFetchingAudio];
+        microphone = nil;
+    }
+    
     // Turn off all other LED menu items
     if (menuColors != nil) {
         for (int i = 0; i < [menuColors numberOfItems]; i++) {
@@ -351,6 +395,11 @@
     if (menuVisualizations != nil) {
         for (int i = 0; i < [menuVisualizations numberOfItems]; i++) {
             [[menuVisualizations itemAtIndex:i] setState:NSOffState];
+        }
+    }
+    if (menuAudio != nil) {
+        for (int i = 0; i < [menuAudio numberOfItems]; i++) {
+            [[menuAudio itemAtIndex:i] setState:NSOffState];
         }
     }
     if (menuDisplays != nil) {
@@ -383,13 +432,32 @@
 }
 
 - (IBAction)relistSerialPorts:(id)sender {
+    // Refill audio device list
+    NSArray *inputDevices = [EZAudioDevice inputDevices];
+    [menuAudio removeAllItems];
+    for (int i = 0; i < [inputDevices count]; i++) {
+        EZAudioDevice *dev = [inputDevices objectAtIndex:i];
+        NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:[dev name] action:@selector(selectedVisualization:) keyEquivalent:@""];
+        [item setTag:MENU_ITEM_TAG_AUDIO];
+        NSString *lastModeString = [NSString stringWithFormat:TEXT_TEMPLATE_AUDIO, [dev name]];
+        if ([lastModeString isEqualToString:[[NSUserDefaults standardUserDefaults] stringForKey:PREF_LED_MODE]]) {
+            [self selectedVisualization:item];
+        }
+        [menuAudio addItem:item];
+    }
+    if ([inputDevices count] > 0) {
+        [menuItemAudio setHidden:NO];
+    } else {
+        [menuItemAudio setHidden:YES];
+    }
+    
     // Refill port list
     NSArray *ports = [Serial listSerialPorts];
     [menuPorts removeAllItems];
     for (int i = 0; i < [ports count]; i++) {
         // Add Menu Item for this port
         NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:[ports objectAtIndex:i] action:@selector(selectedSerialPort:) keyEquivalent:@""];
-        [item setTag:-1];
+        [item setTag:MENU_ITEM_TAG_NOTHING];
         [menuPorts addItem:item];
         
         // Mark it if it is currently open
@@ -422,7 +490,7 @@
     [application orderFrontColorPanel:cp];
 }
 
-- (void)colorSelected:(id)sender {
+- (void)colorSelected:(NSColorPanel *)sender {
     [self setLightsColor:[sender color]];
 }
 
@@ -451,6 +519,12 @@
             [animation invalidate];
             animation = nil;
         }
+        
+        // Stop previous audio data retrieval
+        if (microphone != nil) {
+            [microphone stopFetchingAudio];
+            microphone = nil;
+        }
 
         // Turn off all other LED menu items
         for (int i = 0; i < [menuColors numberOfItems]; i++) {
@@ -470,6 +544,12 @@
                 lastLEDMode = [menuVisualizations itemAtIndex:i];
             }
             [[menuVisualizations itemAtIndex:i] setState:NSOffState];
+        }
+        for (int i = 0; i < [menuAudio numberOfItems]; i++) {
+            if ([[menuAudio itemAtIndex:i] state] == NSOnState) {
+                lastLEDMode = [menuAudio itemAtIndex:i];
+            }
+            [[menuAudio itemAtIndex:i] setState:NSOffState];
         }
         for (int i = 0; i < [menuDisplays numberOfItems]; i++) {
             if ([[menuDisplays itemAtIndex:i] state] == NSOnState) {
@@ -530,6 +610,12 @@
         animation = nil;
     }
     
+    // Stop previous audio data retrieval
+    if (microphone != nil) {
+        [microphone stopFetchingAudio];
+        microphone = nil;
+    }
+    
     // Schedule next invocation for this animation...
     if ([mode isEqualToString:TEXT_GPU_USAGE]) {
         animation = [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(visualizeGPUUsage:) userInfo:mode repeats:YES];
@@ -569,6 +655,12 @@
         animation = nil;
     }
     
+    // Stop previous audio data retrieval
+    if (microphone != nil) {
+        [microphone stopFetchingAudio];
+        microphone = nil;
+    }
+    
     // Schedule next invocation for this animation...
     animation = [NSTimer scheduledTimerWithTimeInterval:DISPLAY_DELAY target:self selector:@selector(visualizeDisplay:) userInfo:[NSNumber numberWithInteger:[sender tag]] repeats:YES];
     
@@ -593,6 +685,11 @@
             [[menuVisualizations itemAtIndex:i] setState:NSOffState];
         }
     }
+    if (menuAudio != nil) {
+        for (int i = 0; i < [menuAudio numberOfItems]; i++) {
+            [[menuAudio itemAtIndex:i] setState:NSOffState];
+        }
+    }
     if (menuDisplays != nil) {
         for (int i = 0; i < [menuDisplays numberOfItems]; i++) {
             [[menuDisplays itemAtIndex:i] setState:NSOffState];
@@ -603,13 +700,40 @@
     
     // Check if it is a display
     BOOL found = NO;
-    if ([sender tag] > -1) {
+    if ([sender tag] > MENU_ITEM_TAG_NOTHING) {
         found = YES;
         [self displayVisualization:sender];
     }
     
+    // Check if it is an audio input device
+    if ((found == NO) && ([sender tag] == MENU_ITEM_TAG_AUDIO)) {
+        found = YES;
+        BOOL foundDev = NO;
+        NSArray *audioDevices = [EZAudioDevice inputDevices];
+        for (int  i = 0; i < [audioDevices count]; i++) {
+            EZAudioDevice *dev = [audioDevices objectAtIndex:i];
+            if ([[dev name] isEqualToString:[sender title]]) {
+                // Found device
+                foundDev = YES;
+                if (microphone != nil) {
+                    [microphone stopFetchingAudio];
+                    microphone = nil;
+                }
+                microphone = [EZMicrophone microphoneWithDelegate:self];
+                [microphone setDevice:dev];
+                [microphone startFetchingAudio];
+                break;
+            }
+        }
+        if (foundDev == NO) {
+            NSLog(@"Couldn't find device \"%@\"\n", [sender title]);
+            [sender setState:NSOffState];
+            return; // Don't store new mode
+        }
+    }
+    
     // Check if it is the manual color select item
-    if ([sender.title isEqualToString:TEXT_MANUAL]) {
+    if ((found == NO) && ([sender.title isEqualToString:TEXT_MANUAL])) {
         found = YES;
         [self colorSelected:[NSColorPanel sharedColorPanel]];
     }
@@ -624,6 +748,12 @@
                 if (animation != nil) {
                     [animation invalidate];
                     animation = nil;
+                }
+                
+                // Stop previous audio data retrieval
+                if (microphone != nil) {
+                    [microphone stopFetchingAudio];
+                    microphone = nil;
                 }
                 
                 NSColor *color = [staticColors valueForKey:key];
@@ -647,7 +777,13 @@
     
     // Store changed value in preferences
     NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
-    [store setObject:[sender title] forKey:PREF_LED_MODE];
+    if ([sender tag] == MENU_ITEM_TAG_AUDIO) {
+        // Prepend text for audio device names
+        NSString *tmp = [NSString stringWithFormat:TEXT_TEMPLATE_AUDIO, [sender title]];
+        [store setObject:tmp forKey:PREF_LED_MODE];
+    } else {
+        [store setObject:[sender title] forKey:PREF_LED_MODE];
+    }
     [store synchronize];
     
 #ifdef DEBUG
@@ -695,6 +831,16 @@
                 [self selectedVisualization:[menuVisualizations itemAtIndex:i]];
             }
         }
+        for (int i = 0; i < [menuAudio numberOfItems]; i++) {
+            if ([[menuAudio itemAtIndex:i] state] == NSOnState) {
+                [self selectedVisualization:[menuAudio itemAtIndex:i]];
+            }
+        }
+        for (int i = 0; i < [menuDisplays numberOfItems]; i++) {
+            if ([[menuDisplays itemAtIndex:i] state] == NSOnState) {
+                [self selectedVisualization:[menuDisplays itemAtIndex:i]];
+            }
+        }
         if ([buttonOff state] == NSOnState) {
             [buttonOff setState:NSOffState];
             [self turnLEDsOff:buttonOff];
@@ -710,6 +856,43 @@
 - (IBAction)showAbout:(id)sender {
     [NSApp activateIgnoringOtherApps:YES];
     [application orderFrontStandardAboutPanel:self];
+}
+
+- (void)updateBuffer:(float *)buffer withBufferSize:(UInt32)bufferSize {
+    if (microphone == nil) {
+        return; // Old buffer from before we changed mode
+    }
+    
+    // TODO visualize sound data somehow
+    //NSLog(@".");
+}
+
+// ------------------------------------------------------
+// ----------------- Microphone Delegate ----------------
+// ------------------------------------------------------
+
+- (void)microphone:(EZMicrophone *)microphone hasAudioReceived:(float **)buffer withBufferSize:(UInt32)bufferSize withNumberOfChannels:(UInt32)numberOfChannels {
+    __weak typeof (self) weakSelf = self;
+    
+    if (weakSelf.microphone == nil) {
+        return;
+    }
+    
+    // Getting audio data as an array of float buffer arrays that can be fed into the
+    // EZAudioPlot, EZAudioPlotGL, or whatever visualization you would like to do with
+    // the microphone data.
+    dispatch_async(dispatch_get_main_queue(),^{
+        // buffer[0] = left channel, buffer[1] = right channel
+        [weakSelf updateBuffer:buffer[0] withBufferSize:bufferSize];
+    });
+}
+
+- (void)microphone:(EZMicrophone *)microphone changedDevice:(EZAudioDevice *)device {
+    // This is not always guaranteed to occur on the main thread so make sure you
+    // wrap it in a GCD block
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSLog(@"Changed audio input device: %@", [device name]);
+    });
 }
 
 // ------------------------------------------------------

@@ -8,9 +8,12 @@
 
 #import <Cocoa/Cocoa.h>
 
+#import "EZAudio.h"
+#import "SystemInfoKit/SystemInfoKit.h"
+
 @class Serial;
 
-@interface AppDelegate : NSObject <NSApplicationDelegate>
+@interface AppDelegate : NSObject <NSApplicationDelegate, EZMicrophoneDelegate>
 
 @property (weak) IBOutlet NSMenu *statusMenu;
 @property (weak) IBOutlet NSApplication *application;
@@ -20,6 +23,8 @@
 @property (weak) IBOutlet NSMenu *menuVisualizations;
 @property (weak) IBOutlet NSMenuItem *menuItemDisplays;
 @property (weak) IBOutlet NSMenu *menuDisplays;
+@property (weak) IBOutlet NSMenuItem *menuItemAudio;
+@property (weak) IBOutlet NSMenu *menuAudio;
 @property (weak) IBOutlet NSMenu *menuPorts;
 
 @property (weak) IBOutlet NSMenuItem *buttonOff;

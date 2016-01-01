@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E9101B871C36B11500720A6E /* EZAudioOSX.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = E9101B831C36B0C100720A6E /* EZAudioOSX.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		E9101B881C36B4B100720A6E /* EZAudioOSX.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9101B831C36B0C100720A6E /* EZAudioOSX.framework */; };
 		E9109B111C2AACF400726111 /* SystemInfoKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9109B0B1C2AAC1B00726111 /* SystemInfoKit.framework */; };
 		E9109B151C2AAEFD00726111 /* SystemInfoKit.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = E9109B0B1C2AAC1B00726111 /* SystemInfoKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		E9109B191C2AAFE100726111 /* GPUStats.m in Sources */ = {isa = PBXBuildFile; fileRef = E9109B181C2AAFE100726111 /* GPUStats.m */; };
@@ -19,6 +21,27 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		E9101B801C36B0C100720A6E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E9101B7B1C36B0C100720A6E /* EZAudio.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 469F4CF31B749F7800666A46;
+			remoteInfo = EZAudioiOS;
+		};
+		E9101B821C36B0C100720A6E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E9101B7B1C36B0C100720A6E /* EZAudio.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 8A5A4B9C1BBBDCB200A8A048;
+			remoteInfo = EZAudioOSX;
+		};
+		E9101B851C36B10C00720A6E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E9101B7B1C36B0C100720A6E /* EZAudio.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 8A5A4B9B1BBBDCB200A8A048;
+			remoteInfo = EZAudioOSX;
+		};
 		E9109B0A1C2AAC1B00726111 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = E9109B051C2AAC1B00726111 /* SystemInfoKit.xcodeproj */;
@@ -49,6 +72,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				E9101B871C36B11500720A6E /* EZAudioOSX.framework in CopyFiles */,
 				E9109B151C2AAEFD00726111 /* SystemInfoKit.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -56,6 +80,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		E9101B7B1C36B0C100720A6E /* EZAudio.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = EZAudio.xcodeproj; path = EZAudio/EZAudio.xcodeproj; sourceTree = "<group>"; };
 		E9109B051C2AAC1B00726111 /* SystemInfoKit.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SystemInfoKit.xcodeproj; path = JSystemInfoKit/SystemInfoKit.xcodeproj; sourceTree = "<group>"; };
 		E9109B171C2AAFE100726111 /* GPUStats.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GPUStats.h; path = CaseLights/GPUStats.h; sourceTree = "<group>"; };
 		E9109B181C2AAFE100726111 /* GPUStats.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = GPUStats.m; path = CaseLights/GPUStats.m; sourceTree = "<group>"; };
@@ -78,12 +103,22 @@
 			buildActionMask = 2147483647;
 			files = (
 				E9109B111C2AACF400726111 /* SystemInfoKit.framework in Frameworks */,
+				E9101B881C36B4B100720A6E /* EZAudioOSX.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		E9101B7C1C36B0C100720A6E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E9101B811C36B0C100720A6E /* EZAudioiOS.framework */,
+				E9101B831C36B0C100720A6E /* EZAudioOSX.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		E9109B061C2AAC1B00726111 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -110,6 +145,7 @@
 		E9F13DF51C28B3D3004C6B95 = {
 			isa = PBXGroup;
 			children = (
+				E9101B7B1C36B0C100720A6E /* EZAudio.xcodeproj */,
 				E9109B051C2AAC1B00726111 /* SystemInfoKit.xcodeproj */,
 				E9F13E001C28B3D3004C6B95 /* CaseLights */,
 				E9F13DFF1C28B3D3004C6B95 /* Products */,
@@ -162,6 +198,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				E9101B861C36B10C00720A6E /* PBXTargetDependency */,
 				E9109B131C2AAD2E00726111 /* PBXTargetDependency */,
 			);
 			name = CaseLights;
@@ -196,6 +233,10 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
+					ProductGroup = E9101B7C1C36B0C100720A6E /* Products */;
+					ProjectRef = E9101B7B1C36B0C100720A6E /* EZAudio.xcodeproj */;
+				},
+				{
 					ProductGroup = E9109B061C2AAC1B00726111 /* Products */;
 					ProjectRef = E9109B051C2AAC1B00726111 /* SystemInfoKit.xcodeproj */;
 				},
@@ -208,6 +249,20 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		E9101B811C36B0C100720A6E /* EZAudioiOS.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = EZAudioiOS.framework;
+			remoteRef = E9101B801C36B0C100720A6E /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		E9101B831C36B0C100720A6E /* EZAudioOSX.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = EZAudioOSX.framework;
+			remoteRef = E9101B821C36B0C100720A6E /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		E9109B0B1C2AAC1B00726111 /* SystemInfoKit.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
@@ -269,6 +324,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		E9101B861C36B10C00720A6E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = EZAudioOSX;
+			targetProxy = E9101B851C36B10C00720A6E /* PBXContainerItemProxy */;
+		};
 		E9109B131C2AAD2E00726111 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = SystemInfoKit;
@@ -377,7 +437,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_BUNDLE_IDENTIFIER = de.xythobuz.CaseLights;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "JSystemInfoKit/**";
+				USER_HEADER_SEARCH_PATHS = "JSystemInfoKit/** EZAudio/EZAudio/**";
 			};
 			name = Debug;
 		};
@@ -392,7 +452,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_BUNDLE_IDENTIFIER = de.xythobuz.CaseLights;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "JSystemInfoKit/**";
+				USER_HEADER_SEARCH_PATHS = "JSystemInfoKit/** EZAudio/EZAudio/**";
 			};
 			name = Release;
 		};
