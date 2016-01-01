@@ -1,3 +1,6 @@
 [submodule "JSystemInfoKit"]
 	path = JSystemInfoKit
 	url = https://github.com/xythobuz/JSystemInfoKit.git
+[submodule "EZAudio"]
+	path = EZAudio
+	url = https://github.com/syedhali/EZAudio.git

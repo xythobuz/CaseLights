@@ -14,7 +14,7 @@ Uncomment the `#define DEBUG` at the beginning of the Sketch to enable very verb
 
 ## Mac OS X App
 
-The CaseLights XCode project includes the JSystemInfoKit project from the submodule in this repository. Just run `xcodebuild` on the command line or open the project in XCode and click `Run` to start the App.
+The CaseLights XCode project includes the projects from the submodules in this repository. Just run `xcodebuild` on the command line or open the project in XCode and click `Run` to start the App.
 
 ![Screenshot](https://i.imgur.com/K7HuJPK.png)
 
@@ -36,7 +36,9 @@ When pulling changes from this repository, you may need to update the submodule:
 
 ## Licensing
 
-The included [JSystemInfoKit](https://github.com/jBot-42/JSystemInfoKit) project is licensed under the GPLv2.
+The included [JSystemInfoKit](https://github.com/jBot-42/JSystemInfoKit) project is licensed under the GPLv2. See the LICENSE file in the submodule directory.
+
+The included [EZAudio](https://github.com/syedhali/EZAudio) project is licensed under the MIT license. See the LICENSE file in the submodule directory.
 
 CaseLights itself is made by Thomas Buck <xythobuz@xythobuz.de> and released under a BSD 2-Clause License. See the accompanying COPYING file.
 
