@@ -10,6 +10,7 @@
 #import "Serial.h"
 #import "GPUStats.h"
 #import "Screenshot.h"
+#import "AudioVisualizer.h"
 
 // These are the values stored persistently in the preferences
 #define PREF_SERIAL_PORT @"SerialPort"
@@ -62,6 +63,26 @@
 
 @interface AppDelegate ()
 
+@property (weak) IBOutlet NSMenu *statusMenu;
+@property (weak) IBOutlet NSApplication *application;
+
+@property (weak) IBOutlet NSMenu *menuColors;
+@property (weak) IBOutlet NSMenu *menuAnimations;
+@property (weak) IBOutlet NSMenu *menuVisualizations;
+@property (weak) IBOutlet NSMenuItem *menuItemDisplays;
+@property (weak) IBOutlet NSMenu *menuDisplays;
+@property (weak) IBOutlet NSMenuItem *menuItemAudio;
+@property (weak) IBOutlet NSMenu *menuAudio;
+@property (weak) IBOutlet NSMenu *menuPorts;
+
+@property (weak) IBOutlet NSMenuItem *buttonOff;
+@property (weak) IBOutlet NSMenuItem *brightnessItem;
+@property (weak) IBOutlet NSSlider *brightnessSlider;
+@property (weak) IBOutlet NSMenuItem *brightnessLabel;
+@property (weak) IBOutlet NSMenuItem *buttonLights;
+
+@property (strong) NSMenuItem *menuItemColor;
+
 @property (strong) NSStatusItem *statusItem;
 @property (strong) NSImage *statusImage;
 @property (strong) NSDictionary *staticColors;
@@ -87,6 +108,7 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     srand((unsigned)time(NULL));
+    [AudioVisualizer setDelegate:self];
     
     serial = [[Serial alloc] init];
     lastLEDMode = nil;
@@ -863,8 +885,7 @@
         return; // Old buffer from before we changed mode
     }
     
-    // TODO visualize sound data somehow
-    //NSLog(@".");
+    [AudioVisualizer updateBuffer:buffer withBufferSize:bufferSize];
 }
 
 // ------------------------------------------------------
