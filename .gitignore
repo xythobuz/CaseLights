@@ -21,3 +21,7 @@ xcuserdata
 *.hmap
 *.ipa
 
+.VolumeIcon.icns
+.fseventsd
+Icon
+
