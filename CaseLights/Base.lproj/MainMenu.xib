@@ -28,6 +28,10 @@
                 <outlet property="menuItemDisplays" destination="1Cz-Xz-d16" id="rRz-n5-n2P"/>
                 <outlet property="menuPorts" destination="lFU-D0-M5p" id="pHd-AA-S3J"/>
                 <outlet property="menuVisualizations" destination="yZl-ae-7SI" id="b2b-dW-mvy"/>
+                <outlet property="sensitivityItem" destination="ioy-5y-tbs" id="huT-vf-Q9H"/>
+                <outlet property="sensitivityLabel" destination="luW-fv-Xlk" id="qbr-n1-q7M"/>
+                <outlet property="sensitivityMenu" destination="1Mp-yz-ggj" id="Xif-Mk-ff8"/>
+                <outlet property="sensitivitySlider" destination="0Vh-pa-Rae" id="4vd-WY-Jwv"/>
                 <outlet property="statusMenu" destination="g7M-LS-DgA" id="txO-T1-8yD"/>
             </connections>
         </customObject>
@@ -703,6 +707,19 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Audio Inputs" id="KUj-jy-iwd"/>
                 </menuItem>
+                <menuItem title="Sensitivity" hidden="YES" id="1Mp-yz-ggj">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="Sensitivity" id="yt8-Dk-EIy">
+                        <items>
+                            <menuItem title="Item" id="ioy-5y-tbs">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                            </menuItem>
+                            <menuItem title="Value: 50%" enabled="NO" id="luW-fv-Xlk">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                            </menuItem>
+                        </items>
+                    </menu>
+                </menuItem>
                 <menuItem title="Brightness" id="Oh0-1U-yDg">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Brightness" id="jRu-sM-3xB">
@@ -765,7 +782,16 @@
             <connections>
                 <action selector="brightnessMoved:" target="Voe-Tx-rLC" id="Wxj-Xc-ZtT"/>
             </connections>
-            <point key="canvasLocation" x="370.5" y="496.5"/>
+            <point key="canvasLocation" x="122.5" y="326.5"/>
+        </slider>
+        <slider verticalHuggingPriority="750" id="0Vh-pa-Rae">
+            <rect key="frame" x="0.0" y="0.0" width="129" height="30"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+            <sliderCell key="cell" alignment="left" maxValue="200" doubleValue="100" tickMarkPosition="below" numberOfTickMarks="11" sliderType="linear" id="39W-Os-oE7"/>
+            <connections>
+                <action selector="sensitivityMoved:" target="Voe-Tx-rLC" id="4Vd-6i-qvd"/>
+            </connections>
+            <point key="canvasLocation" x="122.5" y="394.5"/>
         </slider>
     </objects>
 </document>

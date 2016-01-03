@@ -19,6 +19,7 @@
 #define PREF_LED_MODE @"LEDMode"
 #define PREF_BRIGHTNESS @"Brightness"
 #define PREF_COLOR @"ManualColor"
+#define PREF_SENSITIVITY @"Sensitivity"
 
 #define TEXT_MANUAL @"Select..."
 #define TEXT_CPU_USAGE @"CPU Usage"
@@ -73,12 +74,15 @@
 @property (weak) IBOutlet NSMenuItem *menuItemAudio;
 @property (weak) IBOutlet NSMenu *menuAudio;
 @property (weak) IBOutlet NSMenu *menuPorts;
-
 @property (weak) IBOutlet NSMenuItem *buttonOff;
 @property (weak) IBOutlet NSMenuItem *brightnessItem;
 @property (weak) IBOutlet NSSlider *brightnessSlider;
 @property (weak) IBOutlet NSMenuItem *brightnessLabel;
 @property (weak) IBOutlet NSMenuItem *buttonLights;
+@property (weak) IBOutlet NSMenuItem *sensitivityItem;
+@property (weak) IBOutlet NSSlider *sensitivitySlider;
+@property (weak) IBOutlet NSMenuItem *sensitivityLabel;
+@property (weak) IBOutlet NSMenuItem *sensitivityMenu;
 
 @property (strong) NSMenuItem *menuItemColor;
 
@@ -99,6 +103,7 @@
 @synthesize menuItemAudio, menuAudio;
 @synthesize buttonOff, buttonLights;
 @synthesize brightnessItem, brightnessSlider, brightnessLabel;
+@synthesize sensitivityItem, sensitivitySlider, sensitivityLabel, sensitivityMenu;
 @synthesize statusItem, statusImage;
 @synthesize staticColors, animation;
 @synthesize serial, lastLEDMode, microphone;
@@ -126,6 +131,7 @@
     [appDefaults setObject:[NSNumber numberWithBool:NO] forKey:PREF_LIGHTS_STATE];
     [appDefaults setObject:@"" forKey:PREF_LED_MODE];
     [appDefaults setObject:[NSNumber numberWithFloat:50.0] forKey:PREF_BRIGHTNESS];
+    [appDefaults setObject:[NSNumber numberWithFloat:100.0] forKey:PREF_SENSITIVITY];
     [store registerDefaults:appDefaults];
     [store synchronize];
     NSString *savedPort = [store stringForKey:PREF_SERIAL_PORT];
@@ -133,6 +139,7 @@
     NSString *lastMode = [store stringForKey:PREF_LED_MODE];
     float brightness = [store floatForKey:PREF_BRIGHTNESS];
     NSData *lastColorData = [store dataForKey:PREF_COLOR];
+    float sensitivity = [store floatForKey:PREF_SENSITIVITY];
     NSColor *lastColor = nil;
     if (lastColorData != nil) {
         lastColor = (NSColor *)[NSUnarchiver unarchiveObjectWithData:lastColorData];
@@ -324,6 +331,13 @@
     }
     if ([inputDevices count] > 0) {
         [menuItemAudio setHidden:NO];
+        
+        // Prepare sensitivity menu
+        sensitivityItem.view = sensitivitySlider;
+        [sensitivitySlider setFloatValue:sensitivity];
+        [sensitivityLabel setTitle:[NSString stringWithFormat:@"Value: %.0f%%", sensitivity]];
+        [sensitivityMenu setHidden:NO];
+        [AudioVisualizer setSensitivity:sensitivity];
     }
 }
 
@@ -510,6 +524,16 @@
 
 - (void)colorSelected:(NSColorPanel *)sender {
     [self setLightsColor:[sender color]];
+}
+
+- (IBAction)sensitivityMoved:(NSSlider *)sender {
+    [sensitivityLabel setTitle:[NSString stringWithFormat:@"Value: %.0f%%", [sender floatValue]]];
+    [AudioVisualizer setSensitivity:[sender floatValue]];
+    
+    // Store changed value in preferences
+    NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
+    [store setObject:[NSNumber numberWithFloat:[sender floatValue]] forKey:PREF_SENSITIVITY];
+    [store synchronize];
 }
 
 - (IBAction)brightnessMoved:(NSSlider *)sender {
@@ -728,6 +752,9 @@
         for (int  i = 0; i < [audioDevices count]; i++) {
             EZAudioDevice *dev = [audioDevices objectAtIndex:i];
             if ([[dev name] isEqualToString:[sender title]]) {
+                // Send command to turn off LEDs
+                [self setLightsR:0 G:0 B:0];
+                
                 // Found device
                 foundDev = YES;
                 if (microphone != nil) {

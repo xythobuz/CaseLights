@@ -54,11 +54,16 @@
 static AppDelegate *appDelegate = nil;
 static EZAudioFFT *fft = nil;
 static int maxBufferSize = 0;
+static float sensitivity = 1.0f;
 
 @implementation AudioVisualizer
 
 + (void)setDelegate:(AppDelegate *)delegate {
     appDelegate = delegate;
+}
+
++ (void)setSensitivity:(float)sens {
+    sensitivity = sens / 100.0;
 }
 
 + (void)updateBuffer:(float *)buffer withBufferSize:(UInt32)bufferSize {
@@ -79,6 +84,14 @@ static int maxBufferSize = 0;
         fft = [EZAudioFFT fftWithMaximumBufferSize:maxBufferSize sampleRate:appDelegate.microphone.audioStreamBasicDescription.mSampleRate];
     }
     
+    // Scale input if required
+    if (sensitivity != 1.0f) {
+        for (int i = 0; i < bufferSize; i++) {
+            buffer[i] *= sensitivity;
+        }
+    }
+    
+    // Perform fast fourier transformation
     [fft computeFFTWithBuffer:buffer withBufferSize:bufferSize];
     
     static float history[FFT_BUCKET_COUNT][FFT_BUCKET_HISTORY];
