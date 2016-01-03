@@ -62,6 +62,8 @@
 #define MENU_ITEM_TAG_NOTHING -1
 #define MENU_ITEM_TAG_AUDIO -2
 
+#define COLORED_MENU_BAR_ICON
+
 @interface AppDelegate ()
 
 @property (weak) IBOutlet NSMenu *statusMenu;
@@ -109,6 +111,22 @@
 @synthesize serial, lastLEDMode, microphone;
 @synthesize menuItemColor;
 
++ (NSImage *)tintedImage:(NSImage *)image WithColor:(NSColor *)tint {
+    NSSize size = [image size];
+    NSRect imageBounds = NSMakeRect(0, 0, size.width, size.height);
+    
+    NSImage *copiedImage = [image copy];
+    
+    [copiedImage lockFocus];
+    
+    [tint set];
+    NSRectFillUsingOperation(imageBounds, NSCompositeSourceAtop);
+    
+    [copiedImage unlockFocus];
+    
+    return copiedImage;
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     srand((unsigned)time(NULL));
     [AudioVisualizer setDelegate:self];
@@ -120,9 +138,14 @@
     
     // Prepare status bar menu
     statusImage = [NSImage imageNamed:@"MenuIcon"];
-    [statusImage setTemplate:YES];
     statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSSquareStatusItemLength];
+#ifdef COLORED_MENU_BAR_ICON
+    [statusImage setTemplate:NO];
+    [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:[NSColor blackColor]]];
+#else
+    [statusImage setTemplate:YES];
     [statusItem setImage:statusImage];
+#endif
     [statusItem setMenu:statusMenu];
     
     // Set default configuration values, load existing ones
@@ -461,6 +484,10 @@
         NSLog(@"Trying to send RGB without opened port!\n");
 #endif
     }
+    
+#ifdef COLORED_MENU_BAR_ICON
+    [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:[NSColor colorWithCalibratedRed:r / 255.0f green:g / 255.0f blue:b / 255.0f alpha:1.0f]]];
+#endif
 }
 
 - (IBAction)relistSerialPorts:(id)sender {
