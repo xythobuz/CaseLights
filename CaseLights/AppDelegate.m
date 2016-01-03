@@ -337,7 +337,6 @@
     // Stop previous audio data retrieval
     if (microphone != nil) {
         [microphone stopFetchingAudio];
-        microphone = nil;
     }
     
     // Remove display callback
@@ -398,7 +397,6 @@
     // Stop previous audio data retrieval
     if (microphone != nil) {
         [microphone stopFetchingAudio];
-        microphone = nil;
     }
     
     // Turn off all other LED menu items
@@ -543,7 +541,6 @@
         // Stop previous audio data retrieval
         if (microphone != nil) {
             [microphone stopFetchingAudio];
-            microphone = nil;
         }
 
         // Turn off all other LED menu items
@@ -633,7 +630,6 @@
     // Stop previous audio data retrieval
     if (microphone != nil) {
         [microphone stopFetchingAudio];
-        microphone = nil;
     }
     
     // Schedule next invocation for this animation...
@@ -678,7 +674,6 @@
     // Stop previous audio data retrieval
     if (microphone != nil) {
         [microphone stopFetchingAudio];
-        microphone = nil;
     }
     
     // Schedule next invocation for this animation...
@@ -737,9 +732,9 @@
                 foundDev = YES;
                 if (microphone != nil) {
                     [microphone stopFetchingAudio];
-                    microphone = nil;
+                } else {
+                    microphone = [EZMicrophone microphoneWithDelegate:self];
                 }
-                microphone = [EZMicrophone microphoneWithDelegate:self];
                 [microphone setDevice:dev];
                 [microphone startFetchingAudio];
                 break;
@@ -773,7 +768,6 @@
                 // Stop previous audio data retrieval
                 if (microphone != nil) {
                     [microphone stopFetchingAudio];
-                    microphone = nil;
                 }
                 
                 NSColor *color = [staticColors valueForKey:key];

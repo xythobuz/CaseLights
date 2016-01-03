@@ -13,8 +13,6 @@
 //  Copyright © 2016 xythobuz. All rights reserved.
 //
 
-// Enabling this will cause crashes when changing audio input
-// devices while the app is running. Select it before enabling.
 #ifdef DEBUG
 #define DEBUG_PLOT_FFT
 //#define DEBUG_PLOT_FFT_RAW
