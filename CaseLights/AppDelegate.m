@@ -773,6 +773,12 @@
     
     // Check if it is an audio input device
     if ((found == NO) && ([sender tag] == MENU_ITEM_TAG_AUDIO)) {
+        // Stop previous timer setting
+        if (animation != nil) {
+            [animation invalidate];
+            animation = nil;
+        }
+        
         found = YES;
         BOOL foundDev = NO;
         NSArray *audioDevices = [EZAudioDevice inputDevices];
@@ -794,9 +800,25 @@
                 break;
             }
         }
+        
         if (foundDev == NO) {
             NSLog(@"Couldn't find device \"%@\"\n", [sender title]);
             [sender setState:NSOffState];
+            
+            // List available audio input devices and add menu items
+            NSArray *inputDevices = [EZAudioDevice inputDevices];
+            [menuAudio removeAllItems];
+            for (int i = 0; i < [inputDevices count]; i++) {
+                EZAudioDevice *dev = [inputDevices objectAtIndex:i];
+                NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:[dev name] action:@selector(selectedVisualization:) keyEquivalent:@""];
+                [item setTag:MENU_ITEM_TAG_AUDIO];
+                if ([[dev name] isEqualToString:[sender title]]) {
+                    // Found the device the user really wanted
+                    [self selectedVisualization:item];
+                }
+                [menuAudio addItem:item];
+            }
+            
             return; // Don't store new mode
         }
     }
