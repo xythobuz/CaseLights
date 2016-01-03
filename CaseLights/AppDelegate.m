@@ -62,6 +62,7 @@
 #define MENU_ITEM_TAG_NOTHING -1
 #define MENU_ITEM_TAG_AUDIO -2
 
+// Define this to color the status bar icon according to the current RGB LED value
 #define COLORED_MENU_BAR_ICON
 
 @interface AppDelegate ()
@@ -116,12 +117,27 @@
     NSRect imageBounds = NSMakeRect(0, 0, size.width, size.height);
     
     NSImage *copiedImage = [image copy];
+    NSColor *copiedTint = [tint copy];
+    
+    // Fix colors for different interface styles
+    NSString *osxMode = [[NSUserDefaults standardUserDefaults] stringForKey:@"AppleInterfaceStyle"];
+    CGFloat r, g, b, a;
+    [copiedTint getRed:&r green:&g blue:&b alpha:&a];
+    if ((osxMode != nil) && ([osxMode isEqualToString:@"Dark"])) {
+        // Dark mode
+        if ((r < 0.001f) && (g < 0.001f) && (b < 0.001f)) {
+            copiedTint = [NSColor whiteColor];
+        }
+    } else {
+        // Normal mode
+        if ((r > 0.999f) && (g > 0.999f) && (b > 0.999f)) {
+            copiedTint = [NSColor blackColor];
+        }
+    }
     
     [copiedImage lockFocus];
-    
-    [tint set];
+    [copiedTint set];
     NSRectFillUsingOperation(imageBounds, NSCompositeSourceAtop);
-    
     [copiedImage unlockFocus];
     
     return copiedImage;
@@ -141,7 +157,7 @@
     statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSSquareStatusItemLength];
 #ifdef COLORED_MENU_BAR_ICON
     [statusImage setTemplate:NO];
-    [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:[NSColor blackColor]]];
+    [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:[NSColor colorWithCalibratedRed:0.0f green:0.0f blue:0.0f alpha:1.0f]]];
 #else
     [statusImage setTemplate:YES];
     [statusItem setImage:statusImage];
