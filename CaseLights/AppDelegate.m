@@ -64,7 +64,6 @@
 @interface AppDelegate ()
 
 @property (weak) IBOutlet NSMenu *statusMenu;
-@property (weak) IBOutlet NSApplication *application;
 
 @property (weak) IBOutlet NSMenu *menuColors;
 @property (weak) IBOutlet NSMenu *menuAnimations;
@@ -89,7 +88,6 @@
 @property (strong) NSTimer *animation;
 @property (strong) Serial *serial;
 @property (strong) NSMenuItem *lastLEDMode;
-@property (strong) EZMicrophone *microphone;
 
 @end
 
@@ -880,14 +878,6 @@
     [application orderFrontStandardAboutPanel:self];
 }
 
-- (void)updateBuffer:(float *)buffer withBufferSize:(UInt32)bufferSize {
-    if (microphone == nil) {
-        return; // Old buffer from before we changed mode
-    }
-    
-    [AudioVisualizer updateBuffer:buffer withBufferSize:bufferSize];
-}
-
 // ------------------------------------------------------
 // ----------------- Microphone Delegate ----------------
 // ------------------------------------------------------
@@ -903,8 +893,12 @@
     // EZAudioPlot, EZAudioPlotGL, or whatever visualization you would like to do with
     // the microphone data.
     dispatch_async(dispatch_get_main_queue(),^{
+        if (weakSelf.microphone == nil) {
+            return;
+        }
+        
         // buffer[0] = left channel, buffer[1] = right channel
-        [weakSelf updateBuffer:buffer[0] withBufferSize:bufferSize];
+        [AudioVisualizer updateBuffer:buffer[0] withBufferSize:bufferSize];
     });
 }
 
@@ -956,14 +950,14 @@
     if ([GPUStats getGPUUsage:&usage freeVRAM:&freeVRAM usedVRAM:&usedVRAM] != 0) {
         NSLog(@"Error reading GPU information\n");
     } else {
-        double h = [self map:[usage doubleValue] FromMin:0.0 FromMax:100.0 ToMin:GPU_COLOR_MIN ToMax:GPU_COLOR_MAX];
+        double h = [AppDelegate map:[usage doubleValue] FromMin:0.0 FromMax:100.0 ToMin:GPU_COLOR_MIN ToMax:GPU_COLOR_MAX];
         
 #ifdef DEBUG
         NSLog(@"GPU Usage: %.3f%%\n", [usage doubleValue]);
 #endif
         
         unsigned char r, g, b;
-        [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+        [AppDelegate convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
         [self setLightsR:r G:g B:b];
     }
 }
@@ -975,14 +969,14 @@
     if ([GPUStats getGPUUsage:&usage freeVRAM:&freeVRAM usedVRAM:&usedVRAM] != 0) {
         NSLog(@"Error reading GPU information\n");
     } else {
-        double h = [self map:[freeVRAM doubleValue] FromMin:0.0 FromMax:([freeVRAM doubleValue] + [usedVRAM doubleValue]) ToMin:RAM_COLOR_MIN ToMax:RAM_COLOR_MAX];
+        double h = [AppDelegate map:[freeVRAM doubleValue] FromMin:0.0 FromMax:([freeVRAM doubleValue] + [usedVRAM doubleValue]) ToMin:RAM_COLOR_MIN ToMax:RAM_COLOR_MAX];
         
 #ifdef DEBUG
         NSLog(@"VRAM %.2fGB Free + %.2fGB Used = %.2fGB mapped to color %.2f!\n", [freeVRAM doubleValue] / (1024.0 * 1024.0 * 1024.0), [usedVRAM doubleValue] / (1024.0 * 1024.0 * 1024.0), ([freeVRAM doubleValue] + [usedVRAM doubleValue]) / (1024.0 * 1024.0 * 1024.0), h);
 #endif
         
         unsigned char r, g, b;
-        [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+        [AppDelegate convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
         [self setLightsR:r G:g B:b];
     }
 }
@@ -990,28 +984,28 @@
 - (void)visualizeCPUUsage:(NSTimer *)timer {
     JSKMCPUUsageInfo cpuUsageInfo = [JSKSystemMonitor systemMonitor].cpuUsageInfo;
     
-    double h = [self map:cpuUsageInfo.usage FromMin:0.0 FromMax:100.0 ToMin:CPU_COLOR_MIN ToMax:CPU_COLOR_MAX];
+    double h = [AppDelegate map:cpuUsageInfo.usage FromMin:0.0 FromMax:100.0 ToMin:CPU_COLOR_MIN ToMax:CPU_COLOR_MAX];
     
 #ifdef DEBUG
     NSLog(@"CPU Usage: %.3f%%\n", cpuUsageInfo.usage);
 #endif
     
     unsigned char r, g, b;
-    [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+    [AppDelegate convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
     [self setLightsR:r G:g B:b];
 }
 
 - (void)visualizeRAMUsage:(NSTimer *)timer {
     JSKMMemoryUsageInfo memoryUsageInfo = [JSKSystemMonitor systemMonitor].memoryUsageInfo;
     
-    double h = [self map:memoryUsageInfo.freeMemory FromMin:0.0 FromMax:(memoryUsageInfo.usedMemory + memoryUsageInfo.freeMemory) ToMin:RAM_COLOR_MIN ToMax:RAM_COLOR_MAX];
+    double h = [AppDelegate map:memoryUsageInfo.freeMemory FromMin:0.0 FromMax:(memoryUsageInfo.usedMemory + memoryUsageInfo.freeMemory) ToMin:RAM_COLOR_MIN ToMax:RAM_COLOR_MAX];
     
 #ifdef DEBUG
     NSLog(@"RAM %.2fGB Free + %.2fGB Used = %.2fGB mapped to color %.2f!\n", memoryUsageInfo.freeMemory / (1024.0 * 1024.0 * 1024.0), memoryUsageInfo.usedMemory / (1024.0 * 1024.0 * 1024.0), (memoryUsageInfo.freeMemory + memoryUsageInfo.usedMemory) / (1024.0 * 1024.0 * 1024.0), h);
 #endif
     
     unsigned char r, g, b;
-    [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+    [AppDelegate convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
     [self setLightsR:r G:g B:b];
 }
 
@@ -1031,14 +1025,14 @@
         temp = GPU_TEMP_MIN;
     }
     
-    double h = [self map:temp FromMin:GPU_TEMP_MIN FromMax:GPU_TEMP_MAX ToMin:GPU_COLOR_MIN ToMax:GPU_COLOR_MAX];
+    double h = [AppDelegate map:temp FromMin:GPU_TEMP_MIN FromMax:GPU_TEMP_MAX ToMin:GPU_COLOR_MIN ToMax:GPU_COLOR_MAX];
     
 #ifdef DEBUG
     NSLog(@"GPU Temp %.2f mapped to color %.2f!\n", temp, h);
 #endif
     
     unsigned char r, g, b;
-    [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+    [AppDelegate convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
     [self setLightsR:r G:g B:b];
 }
 
@@ -1058,14 +1052,14 @@
         temp = CPU_TEMP_MIN;
     }
     
-    double h = [self map:temp FromMin:CPU_TEMP_MIN FromMax:CPU_TEMP_MAX ToMin:CPU_COLOR_MIN ToMax:CPU_COLOR_MAX];
+    double h = [AppDelegate map:temp FromMin:CPU_TEMP_MIN FromMax:CPU_TEMP_MAX ToMin:CPU_COLOR_MIN ToMax:CPU_COLOR_MAX];
     
 #ifdef DEBUG
     NSLog(@"CPU Temp %.2f mapped to color %.2f!\n", temp, h);
 #endif
     
     unsigned char r, g, b;
-    [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+    [AppDelegate convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
     [self setLightsR:r G:g B:b];
 }
 
@@ -1103,7 +1097,7 @@
     }
     
     unsigned char r, g, b;
-    [self convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
+    [AppDelegate convertH:h S:1.0 V:1.0 toR:&r G:&g B:&b];
     [self setLightsR:r G:g B:b];
 }
 
@@ -1115,12 +1109,12 @@
 // --------------------- Utilities ---------------------
 // -----------------------------------------------------
 
-- (double)map:(double)val FromMin:(double)fmin FromMax:(double)fmax ToMin:(double)tmin ToMax:(double)tmax {
++ (double)map:(double)val FromMin:(double)fmin FromMax:(double)fmax ToMin:(double)tmin ToMax:(double)tmax {
     double norm = (val - fmin) / (fmax - fmin);
     return (norm * (tmax - tmin)) + tmin;
 }
 
-- (void)convertH:(double)h S:(double)s V:(double)v toR:(unsigned char *)r G:(unsigned char *)g B:(unsigned char *)b {
++ (void)convertH:(double)h S:(double)s V:(double)v toR:(unsigned char *)r G:(unsigned char *)g B:(unsigned char *)b {
     // Adapted from:
     // https://gist.github.com/hdznrrd/656996
     

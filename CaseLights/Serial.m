@@ -9,6 +9,8 @@
 //  Copyright © 2015 xythobuz. All rights reserved.
 //
 
+//#define DEBUG_TEXT
+
 #import <Cocoa/Cocoa.h>
 #import <IOKit/IOKitLib.h>
 #import <IOKit/serial/IOSerialKeys.h>
@@ -155,7 +157,7 @@
     const char *data = [string UTF8String];
     size_t length = strlen(data);
     
-#ifdef DEBUG
+#ifdef DEBUG_TEXT
     NSLog(@"Sending string %s", data);
 #endif
     

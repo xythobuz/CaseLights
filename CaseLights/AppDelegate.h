@@ -15,10 +15,17 @@
 
 @interface AppDelegate : NSObject <NSApplicationDelegate, EZMicrophoneDelegate>
 
+@property (weak) IBOutlet NSApplication *application;
+
+@property (strong) EZMicrophone *microphone;
+
 - (void)clearDisplayUI;
 - (void)updateDisplayUI:(NSArray *)displayIDs;
 
 - (void)setLightsR:(unsigned char)r G:(unsigned char)g B:(unsigned char)b;
+
++ (double)map:(double)val FromMin:(double)fmin FromMax:(double)fmax ToMin:(double)tmin ToMax:(double)tmax;
++ (void)convertH:(double)h S:(double)s V:(double)v toR:(unsigned char *)r G:(unsigned char *)g B:(unsigned char *)b;
 
 @end
 
