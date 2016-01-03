@@ -15,10 +15,14 @@
 
 // Enabling this will cause crashes when changing audio input
 // devices while the app is running. Select it before enabling.
+#ifdef DEBUG
 #define DEBUG_PLOT_FFT
 //#define DEBUG_PLOT_FFT_RAW
+#endif
 
+#ifdef DEBUG_PLOT_FFT
 #define DEBUG_LOG_BEATS
+#endif
 
 #import "AudioVisualizer.h"
 #import "AppDelegate.h"
@@ -31,11 +35,19 @@
 
 // Parameters for fine-tuning beat detection
 #define FFT_BUCKET_COUNT 64
-#define FFT_BUCKET_HISTORY 43
-#define FFT_C_FACTOR 4.2
-#define FFT_V0_FACTOR 0.000015
-#define FFT_MAX_V0_COLOR 0.0002
-#define FFT_COLOR_DECAY 0.99
+#define FFT_BUCKET_HISTORY 45
+#define FFT_C_FACTOR 3.3
+#define FFT_V0_FACTOR 0.00001
+#define FFT_MAX_V0_COLOR 0.00025
+#define FFT_COLOR_DECAY 0.98
+
+// Use this to skip specific frequencies
+// Only check bass frequencies
+//#define FFT_BUCKET_SKIP_CONDITION (i > (FFT_BUCKET_COUNT / 4))
+// Only check mid frequencies
+//#define FFT_BUCKET_SKIP_CONDITION ((i < (FFT_BUCKET_COUNT / 4)) || (i > (FFT_BUCKET_COUNT * 3 / 4)))
+// Only check high frequencies
+//#define FFT_BUCKET_SKIP_CONDITION (i < (FFT_BUCKET_COUNT * 3 / 4))
 
 // Factors for nicer debug display
 #define FFT_DEBUG_RAW_FACTOR 42.0
@@ -98,6 +110,7 @@ static int maxBufferSize = 0;
     int beatCount = 0;
 #endif
     
+    // Slowly fade old colors to black
     static unsigned char lastRed = 0, lastGreen = 0, lastBlue = 0;
     lastRed = lastRed * FFT_COLOR_DECAY;
     lastGreen = lastGreen * FFT_COLOR_DECAY;
@@ -105,11 +118,19 @@ static int maxBufferSize = 0;
     
     // Check for any beats
     for (int i = 0; i < FFT_BUCKET_COUNT; i++) {
+        // Skip frequency bands, if required
+#ifdef FFT_BUCKET_SKIP_CONDITION
+        if (FFT_BUCKET_SKIP_CONDITION) continue;
+#endif
+        
+        // Calculate average of history of this frequency
         float average = 0.0f;
         for (int j = 0; j < FFT_BUCKET_HISTORY; j++) {
             average += history[i][j];
         }
         average /= FFT_BUCKET_HISTORY;
+        
+        // Calculate variance of current bucket in history
         float v = 0.0f;
         for (int j = 0; j < FFT_BUCKET_HISTORY; j++) {
             float tmp = history[i][j] - average;
@@ -117,6 +138,8 @@ static int maxBufferSize = 0;
             v += tmp;
         }
         v /= FFT_BUCKET_HISTORY;
+        
+        // Check for beat conditions
         if ((history[i][nextHistory] > (FFT_C_FACTOR * average)) && (v > FFT_V0_FACTOR)) {
             // Found a beat on this frequency band, map to a single color
             if (v < FFT_V0_FACTOR) v = FFT_V0_FACTOR;
@@ -137,19 +160,29 @@ static int maxBufferSize = 0;
 #ifdef DEBUG_LOG_BEATS
             NSLog(@"Beat in %d with c: %f v: %f", i, (history[i][nextHistory] / average), v);
 #endif
+            
 #ifdef DEBUG_PLOT_FFT
             beatCount++;
 #endif
         }
     }
     
-    [appDelegate setLightsR:lastRed G:lastGreen B:lastBlue];
+    // Send new RGB value to lights, if it has changed
+    static unsigned char lastSentRed = 42, lastSentGreen = 23, lastSentBlue = 99;
+    if ((lastSentRed != lastRed) || (lastSentGreen != lastGreen) || (lastSentBlue != lastBlue)) {
+        [appDelegate setLightsR:lastRed G:lastGreen B:lastBlue];
+        lastSentRed = lastRed;
+        lastSentGreen = lastGreen;
+        lastSentBlue = lastBlue;
+    }
 
+    // Display debug FFT plot, if required
 #ifdef DEBUG_PLOT_FFT
     static NSWindow *window = nil;
     static EZAudioPlot *plot = nil;
     static NSTextField *label = nil;
     if ((window == nil) || (plot == nil) || (label == nil)) {
+        // Create window
         NSRect frame = NSMakeRect(450, 300, 600, 400);
         window = [[NSWindow alloc] initWithContentRect:frame
                                              styleMask:NSClosableWindowMask | NSTitledWindowMask | NSBorderlessWindowMask
@@ -157,6 +190,7 @@ static int maxBufferSize = 0;
                                                  defer:NO];
         [window setTitle:@"Debug FFT"];
         
+        // Create FFT Plot and add to window
         plot = [[EZAudioPlot alloc] initWithFrame:window.contentView.frame];
         plot.color = [NSColor whiteColor];
         plot.shouldOptimizeForRealtimePlot = NO; // Not working with 'YES' here?!
@@ -166,6 +200,7 @@ static int maxBufferSize = 0;
         plot.plotType = EZPlotTypeBuffer;
         [window.contentView addSubview:plot];
         
+        // Create beat count label
         label = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 380, 600, 20)];
         [label setTextColor:[NSColor whiteColor]];
         [label setEditable:NO];
@@ -175,11 +210,13 @@ static int maxBufferSize = 0;
         [label setStringValue:@"-"];
         [window.contentView addSubview:label];
         
+        // Make window visible
         [window makeKeyAndOrderFront:appDelegate.application];
         NSLog(@"Created debugging FFT Plot window...\n");
     }
     
-    // Scale so we can see something
+    // Copy output to input buffer (a bit ugly, but is always big enough)
+    // Scale so user can see something
 # ifdef DEBUG_PLOT_FFT_RAW
     memcpy(buffer, fft.fftData, bufferSize * sizeof(float));
     for (UInt32 i = 0; i < bufferSize; i++) {
@@ -196,6 +233,7 @@ static int maxBufferSize = 0;
     }
     [plot updateBuffer:buffer withBufferSize:bufferSize];
     
+    // Change background color to match color output and show beat counter
     [window setBackgroundColor:[NSColor colorWithCalibratedRed:lastRed / 255.0 green:lastGreen / 255.0 blue:lastBlue / 255.0 alpha:1.0]];
     [label setStringValue:[NSString stringWithFormat:@"Beats: %d", beatCount]];
 #endif
