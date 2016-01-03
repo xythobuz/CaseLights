@@ -373,7 +373,7 @@
     
     // Stop previous audio data retrieval
     if (microphone != nil) {
-        [microphone stopFetchingAudio];
+        [microphone setMicrophoneOn:NO];
     }
     
     // Remove display callback
@@ -433,7 +433,7 @@
     
     // Stop previous audio data retrieval
     if (microphone != nil) {
-        [microphone stopFetchingAudio];
+        [microphone setMicrophoneOn:NO];
     }
     
     // Turn off all other LED menu items
@@ -591,7 +591,7 @@
         
         // Stop previous audio data retrieval
         if (microphone != nil) {
-            [microphone stopFetchingAudio];
+            [microphone setMicrophoneOn:NO];
         }
 
         // Turn off all other LED menu items
@@ -680,7 +680,7 @@
     
     // Stop previous audio data retrieval
     if (microphone != nil) {
-        [microphone stopFetchingAudio];
+        [microphone setMicrophoneOn:NO];
     }
     
     // Schedule next invocation for this animation...
@@ -724,7 +724,7 @@
     
     // Stop previous audio data retrieval
     if (microphone != nil) {
-        [microphone stopFetchingAudio];
+        [microphone setMicrophoneOn:NO];
     }
     
     // Schedule next invocation for this animation...
@@ -785,12 +785,12 @@
                 // Found device
                 foundDev = YES;
                 if (microphone != nil) {
-                    [microphone stopFetchingAudio];
+                    [microphone setMicrophoneOn:NO];
                 } else {
                     microphone = [EZMicrophone microphoneWithDelegate:self];
                 }
                 [microphone setDevice:dev];
-                [microphone startFetchingAudio];
+                [microphone setMicrophoneOn:YES];
                 break;
             }
         }
@@ -821,7 +821,7 @@
                 
                 // Stop previous audio data retrieval
                 if (microphone != nil) {
-                    [microphone stopFetchingAudio];
+                    [microphone setMicrophoneOn:NO];
                 }
                 
                 NSColor *color = [staticColors valueForKey:key];
@@ -933,26 +933,20 @@
 - (void)microphone:(EZMicrophone *)microphone hasAudioReceived:(float **)buffer withBufferSize:(UInt32)bufferSize withNumberOfChannels:(UInt32)numberOfChannels {
     __weak typeof (self) weakSelf = self;
     
-    if (weakSelf.microphone == nil) {
-        return;
-    }
-    
     // Getting audio data as an array of float buffer arrays that can be fed into the
     // EZAudioPlot, EZAudioPlotGL, or whatever visualization you would like to do with
     // the microphone data.
     dispatch_async(dispatch_get_main_queue(),^{
-        if (weakSelf.microphone == nil) {
+        if (weakSelf.microphone.microphoneOn == NO) {
             return;
         }
-        
+            
         // buffer[0] = left channel, buffer[1] = right channel
         [AudioVisualizer updateBuffer:buffer[0] withBufferSize:bufferSize];
     });
 }
 
 - (void)microphone:(EZMicrophone *)microphone changedDevice:(EZAudioDevice *)device {
-    // This is not always guaranteed to occur on the main thread so make sure you
-    // wrap it in a GCD block
     dispatch_async(dispatch_get_main_queue(), ^{
         NSLog(@"Changed audio input device: %@", [device name]);
     });
