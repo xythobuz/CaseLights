@@ -112,37 +112,6 @@
 @synthesize serial, lastLEDMode, microphone;
 @synthesize menuItemColor;
 
-+ (NSImage *)tintedImage:(NSImage *)image WithColor:(NSColor *)tint {
-    NSSize size = [image size];
-    NSRect imageBounds = NSMakeRect(0, 0, size.width, size.height);
-    
-    NSImage *copiedImage = [image copy];
-    NSColor *copiedTint = [tint copy];
-    
-    // Fix colors for different interface styles
-    NSString *osxMode = [[NSUserDefaults standardUserDefaults] stringForKey:@"AppleInterfaceStyle"];
-    CGFloat r, g, b, a;
-    [copiedTint getRed:&r green:&g blue:&b alpha:&a];
-    if ((osxMode != nil) && ([osxMode isEqualToString:@"Dark"])) {
-        // Dark mode
-        if ((r < 0.001f) && (g < 0.001f) && (b < 0.001f)) {
-            copiedTint = [NSColor whiteColor];
-        }
-    } else {
-        // Normal mode
-        if ((r > 0.999f) && (g > 0.999f) && (b > 0.999f)) {
-            copiedTint = [NSColor blackColor];
-        }
-    }
-    
-    [copiedImage lockFocus];
-    [copiedTint set];
-    NSRectFillUsingOperation(imageBounds, NSCompositeSourceAtop);
-    [copiedImage unlockFocus];
-    
-    return copiedImage;
-}
-
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     srand((unsigned)time(NULL));
     [AudioVisualizer setDelegate:self];
@@ -158,6 +127,7 @@
 #ifdef COLORED_MENU_BAR_ICON
     [statusImage setTemplate:NO];
     [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:[NSColor colorWithCalibratedRed:0.0f green:0.0f blue:0.0f alpha:1.0f]]];
+    [[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(darkModeChanged:) name:@"AppleInterfaceThemeChangedNotification" object:nil];
 #else
     [statusImage setTemplate:YES];
     [statusItem setImage:statusImage];
@@ -964,6 +934,12 @@
     [application orderFrontStandardAboutPanel:self];
 }
 
+#ifdef COLORED_MENU_BAR_ICON
+- (void)darkModeChanged:(NSNotification *)notification {
+    [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:nil]];
+}
+#endif
+
 // ------------------------------------------------------
 // ----------------- Microphone Delegate ----------------
 // ------------------------------------------------------
@@ -1188,6 +1164,60 @@
 // -----------------------------------------------------
 // --------------------- Utilities ---------------------
 // -----------------------------------------------------
+
+#ifdef COLORED_MENU_BAR_ICON
++ (NSImage *)tintedImage:(NSImage *)image WithColor:(NSColor *)tint {
+    NSSize size = [image size];
+    NSRect imageBounds = NSMakeRect(0, 0, size.width, size.height);
+    
+    NSString *osxMode = [[NSUserDefaults standardUserDefaults] stringForKey:@"AppleInterfaceStyle"];
+    BOOL darkMode = ((osxMode != nil) && ([osxMode isEqualToString:@"Dark"])) ? YES : NO;
+    
+    NSImage *copiedImage = [image copy];
+    static NSColor *lastTint = nil;
+    NSColor *copiedTint = nil;
+    if (tint != nil) {
+        // Just use the provided color
+        copiedTint = [tint copy];
+        lastTint = copiedTint;
+    } else {
+        // Try to use the same color as the last time
+        if (lastTint != nil) {
+            copiedTint = lastTint;
+        } else {
+#ifdef DEBUG
+            NSLog(@"Trying to set last status bar icon color, but was not set!\n");
+#endif
+            
+            if (darkMode == YES) {
+                copiedTint = [NSColor whiteColor];
+            } else {
+                copiedTint = [NSColor blackColor];
+            }
+        }
+    }
+    
+    // Fix colors for different interface styles
+    CGFloat r, g, b, a;
+    [copiedTint getRed:&r green:&g blue:&b alpha:&a];
+    if (darkMode == YES) {
+        if ((r < 0.001f) && (g < 0.001f) && (b < 0.001f)) {
+            copiedTint = [NSColor whiteColor];
+        }
+    } else {
+        if ((r > 0.999f) && (g > 0.999f) && (b > 0.999f)) {
+            copiedTint = [NSColor blackColor];
+        }
+    }
+    
+    [copiedImage lockFocus];
+    [copiedTint set];
+    NSRectFillUsingOperation(imageBounds, NSCompositeSourceAtop);
+    [copiedImage unlockFocus];
+    
+    return copiedImage;
+}
+#endif
 
 + (double)map:(double)val FromMin:(double)fmin FromMax:(double)fmax ToMin:(double)tmin ToMax:(double)tmax {
     double norm = (val - fmin) / (fmax - fmin);
