@@ -20,6 +20,7 @@
                 <outlet property="brightnessSlider" destination="axk-la-AqI" id="J4R-Mw-KN7"/>
                 <outlet property="buttonLights" destination="tLQ-BA-kGu" id="FZv-Ju-l7n"/>
                 <outlet property="buttonOff" destination="gT4-tm-Hvn" id="EEv-lf-Qo7"/>
+                <outlet property="colorizeIconItem" destination="F4i-Jg-lxm" id="TIi-7F-Pxz"/>
                 <outlet property="menuAnimations" destination="FJm-ND-abA" id="iGI-Hg-tms"/>
                 <outlet property="menuAudio" destination="KUj-jy-iwd" id="ct3-CS-KXG"/>
                 <outlet property="menuColors" destination="ZKz-ek-t6c" id="B2S-fy-Ca6"/>
@@ -759,6 +760,12 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
                         <action selector="relistSerialPorts:" target="Voe-Tx-rLC" id="iFU-PL-xR8"/>
+                    </connections>
+                </menuItem>
+                <menuItem title="Colorize Icon" id="F4i-Jg-lxm">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <connections>
+                        <action selector="colorizeIconSelected:" target="Voe-Tx-rLC" id="CC5-K4-QIW"/>
                     </connections>
                 </menuItem>
                 <menuItem title="About CaseLights" id="GeK-ey-XEn">

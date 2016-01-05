@@ -20,6 +20,7 @@
 #define PREF_BRIGHTNESS @"Brightness"
 #define PREF_COLOR @"ManualColor"
 #define PREF_SENSITIVITY @"Sensitivity"
+#define PREF_COLORED_ICON @"ColorizeIcon"
 
 #define TEXT_MANUAL @"Select..."
 #define TEXT_CPU_USAGE @"CPU Usage"
@@ -62,9 +63,6 @@
 #define MENU_ITEM_TAG_NOTHING -1
 #define MENU_ITEM_TAG_AUDIO -2
 
-// Define this to color the status bar icon according to the current RGB LED value
-#define COLORED_MENU_BAR_ICON
-
 @interface AppDelegate ()
 
 @property (weak) IBOutlet NSMenu *statusMenu;
@@ -86,6 +84,7 @@
 @property (weak) IBOutlet NSSlider *sensitivitySlider;
 @property (weak) IBOutlet NSMenuItem *sensitivityLabel;
 @property (weak) IBOutlet NSMenuItem *sensitivityMenu;
+@property (weak) IBOutlet NSMenuItem *colorizeIconItem;
 
 @property (strong) NSMenuItem *menuItemColor;
 
@@ -110,7 +109,7 @@
 @synthesize statusItem, statusImage;
 @synthesize staticColors, animation;
 @synthesize serial, lastLEDMode, microphone;
-@synthesize menuItemColor;
+@synthesize menuItemColor, colorizeIconItem;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     srand((unsigned)time(NULL));
@@ -121,18 +120,7 @@
     animation = nil;
     microphone = nil;
     
-    // Prepare status bar menu
-    statusImage = [NSImage imageNamed:@"MenuIcon"];
-    statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSSquareStatusItemLength];
-#ifdef COLORED_MENU_BAR_ICON
-    [statusImage setTemplate:NO];
-    [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:[NSColor colorWithCalibratedRed:0.0f green:0.0f blue:0.0f alpha:1.0f]]];
     [[NSDistributedNotificationCenter defaultCenter] addObserver:self selector:@selector(darkModeChanged:) name:@"AppleInterfaceThemeChangedNotification" object:nil];
-#else
-    [statusImage setTemplate:YES];
-    [statusItem setImage:statusImage];
-#endif
-    [statusItem setMenu:statusMenu];
     
     // Set default configuration values, load existing ones
     NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
@@ -141,6 +129,7 @@
     [appDefaults setObject:@"" forKey:PREF_LED_MODE];
     [appDefaults setObject:[NSNumber numberWithFloat:50.0] forKey:PREF_BRIGHTNESS];
     [appDefaults setObject:[NSNumber numberWithFloat:100.0] forKey:PREF_SENSITIVITY];
+    [appDefaults setObject:[NSNumber numberWithBool:YES] forKey:PREF_COLORED_ICON];
     [store registerDefaults:appDefaults];
     [store synchronize];
     NSString *savedPort = [store stringForKey:PREF_SERIAL_PORT];
@@ -153,6 +142,21 @@
     if (lastColorData != nil) {
         lastColor = (NSColor *)[NSUnarchiver unarchiveObjectWithData:lastColorData];
     }
+    BOOL coloredIcon = [store boolForKey:PREF_COLORED_ICON];
+    
+    // Prepare status bar menu
+    statusImage = [NSImage imageNamed:@"MenuIcon"];
+    statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSSquareStatusItemLength];
+    if (coloredIcon == YES) {
+        [statusImage setTemplate:NO];
+        [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:[NSColor colorWithCalibratedRed:0.0f green:0.0f blue:0.0f alpha:1.0f]]];
+        [colorizeIconItem setState:NSOnState];
+    } else {
+        [statusImage setTemplate:YES];
+        [statusItem setImage:statusImage];
+        [colorizeIconItem setState:NSOffState];
+    }
+    [statusItem setMenu:statusMenu];
     
     // Prepare brightness menu
     brightnessItem.view = brightnessSlider;
@@ -471,9 +475,27 @@
 #endif
     }
     
-#ifdef COLORED_MENU_BAR_ICON
-    [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:[NSColor colorWithCalibratedRed:r / 255.0f green:g / 255.0f blue:b / 255.0f alpha:1.0f]]];
-#endif
+    if (colorizeIconItem.state == NSOnState) {
+        [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:[NSColor colorWithCalibratedRed:r / 255.0f green:g / 255.0f blue:b / 255.0f alpha:1.0f]]];
+    }
+}
+
+- (IBAction)colorizeIconSelected:(NSMenuItem *)sender {
+    NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
+    if ([sender state] == NSOffState) {
+        // Colorize icon
+        [statusImage setTemplate:NO];
+        [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:[NSColor colorWithCalibratedRed:0.0f green:0.0f blue:0.0f alpha:1.0f]]];
+        [colorizeIconItem setState:NSOnState];
+        [store setObject:[NSNumber numberWithBool:YES] forKey:PREF_COLORED_ICON];
+    } else {
+        // Don't colorize icon
+        [statusImage setTemplate:YES];
+        [statusItem setImage:statusImage];
+        [colorizeIconItem setState:NSOffState];
+        [store setObject:[NSNumber numberWithBool:NO] forKey:PREF_COLORED_ICON];
+    }
+    [store synchronize];
 }
 
 - (IBAction)relistSerialPorts:(id)sender {
@@ -934,11 +956,13 @@
     [application orderFrontStandardAboutPanel:self];
 }
 
-#ifdef COLORED_MENU_BAR_ICON
 - (void)darkModeChanged:(NSNotification *)notification {
-    [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:nil]];
+    NSUserDefaults *store = [NSUserDefaults standardUserDefaults];
+    BOOL colorize = [store boolForKey:PREF_COLORED_ICON];
+    if (colorize == YES) {
+        [statusItem setImage:[AppDelegate tintedImage:statusImage WithColor:nil]];
+    }
 }
-#endif
 
 // ------------------------------------------------------
 // ----------------- Microphone Delegate ----------------
@@ -1165,7 +1189,6 @@
 // --------------------- Utilities ---------------------
 // -----------------------------------------------------
 
-#ifdef COLORED_MENU_BAR_ICON
 + (NSImage *)tintedImage:(NSImage *)image WithColor:(NSColor *)tint {
     NSSize size = [image size];
     NSRect imageBounds = NSMakeRect(0, 0, size.width, size.height);
@@ -1217,7 +1240,6 @@
     
     return copiedImage;
 }
-#endif
 
 + (double)map:(double)val FromMin:(double)fmin FromMax:(double)fmax ToMin:(double)tmin ToMax:(double)tmax {
     double norm = (val - fmin) / (fmax - fmin);
