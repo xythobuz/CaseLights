@@ -1,14 +1,16 @@
 # CaseLights
 
-CaseLights is an Arduino based RGB LED controller using a simple MOSFET setup. The lights are controlled with a Mac OS X Menu Bar App that can set static colors, animations, or visualize various computer status values using the included [JSystemInfoKit](https://github.com/jBot-42/JSystemInfoKit).
+CaseLights is an Arduino based RGB LED controller using a simple MOSFET setup. The lights are controlled with a Mac OS X Menu Bar App that can set static colors, animations, or visualize various computer status values using the included libraries [JSystemInfoKit](https://github.com/jBot-42/JSystemInfoKit) and [EZAudio](https://github.com/syedhali/EZAudio).
+
+If you don't want to compile the CaseLights App yourself, [download the latest binary from the GitHub releases page](https://github.com/xythobuz/CaseLights/releases).
 
 ## Arduino Sketch
 
-You could connect pretty much any hardware. I’m using a N-Channel MOSFET Setup with IRF530 and a 10-piece RGB LED strip as well as an UV light tube.
+You could connect pretty much any hardware. I'm using a N-Channel MOSFET Setup with IRF530 and a 10-piece RGB LED strip as well as an UV light tube.
 
 [![fritzing Schematic](https://i.imgur.com/jWLW22F.png)](https://i.imgur.com/sXAADUs.png)
 
-My finished setup is made with a cheap Arduino Pro Mini clone from China and a [dead simple RS232-TTL converter](http://picprojects.org.uk/projects/simpleSIO/ssio.htm) connected to its serial port. You may need to change `Serial` to `Serial1` in the Sketch if you’re trying to do this with an Arduino Leonardo, as I did at first.
+My finished setup is made with a cheap Arduino Pro Mini clone from China and a [dead simple RS232-TTL converter](http://picprojects.org.uk/projects/simpleSIO/ssio.htm) connected to its serial port. You may need to change `Serial` to `Serial1` in the Sketch if you're trying to do this with an Arduino Leonardo, as I did at first.
 
 Uncomment the `#define DEBUG` at the beginning of the Sketch to enable very verbose debug messages sent on the serial port. This is not recommended for use with the CaseLights App.
 
