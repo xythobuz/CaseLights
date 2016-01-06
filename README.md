@@ -25,6 +25,7 @@ CaseLights is only visible in the system menu bar. You can enable or disable the
 You can also select one of the displays connected to the Host machine. The CaseLights App will then create a Screenshot of this display 10-times per second and calculate the average color to display it on the RGB LEDs.
 
 CaseLights is also able to visualize sound coming from a system audio input. To be able to directly visualize the system sound output, install [Soundflower](https://github.com/mattingalls/Soundflower) and create a Multi-Output-Device in the Mac `Audio Midi Setup.app` consisting of `Soundflower (2ch)` and your normally used output device. Set this device as audio output. Then, in CaseLights, select `Soundflower (2ch)` as input.
+Click on an audio device with a CTRL-click to display a window with the fast-fourier-transformation plot.
 
 ## Working with Git Submodules
 

@@ -14,6 +14,7 @@
 
 + (void)setDelegate:(AppDelegate *)delegate;
 + (void)setSensitivity:(float)sens;
++ (void)setShowWindow:(BOOL)showWindow;
 + (void)updateBuffer:(float *)buffer withBufferSize:(UInt32)bufferSize;
 
 @end

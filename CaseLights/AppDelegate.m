@@ -648,6 +648,9 @@
         
         // Send command to turn off LEDs
         [self setLightsR:0 G:0 B:0];
+        
+        // Close debug window, if created
+        [AudioVisualizer setShowWindow:NO];
     } else {
         // Try to restore last LED setting
         if (lastLEDMode != nil) {
@@ -780,6 +783,7 @@
     }
     
     // Check if it is an audio input device
+    BOOL foundAudioDev = NO;
     if ((found == NO) && ([sender tag] == MENU_ITEM_TAG_AUDIO)) {
         // Stop previous timer setting
         if (animation != nil) {
@@ -788,7 +792,6 @@
         }
         
         found = YES;
-        BOOL foundDev = NO;
         NSArray *audioDevices = [EZAudioDevice inputDevices];
         for (int  i = 0; i < [audioDevices count]; i++) {
             EZAudioDevice *dev = [audioDevices objectAtIndex:i];
@@ -797,7 +800,7 @@
                 [self setLightsR:0 G:0 B:0];
                 
                 // Found device
-                foundDev = YES;
+                foundAudioDev = YES;
                 if (microphone != nil) {
                     [microphone setMicrophoneOn:NO];
                 } else {
@@ -809,7 +812,7 @@
             }
         }
         
-        if (foundDev == NO) {
+        if (foundAudioDev == NO) {
             NSLog(@"Couldn't find device \"%@\"\n", [sender title]);
             [sender setState:NSOffState];
             
@@ -828,6 +831,14 @@
             }
             
             return; // Don't store new mode
+        } else {
+            // Show debug window if CTRL is held while clicking on audio device
+            NSUInteger mods = [NSEvent modifierFlags] & NSDeviceIndependentModifierFlagsMask;
+            if (mods & NSControlKeyMask) {
+                [AudioVisualizer setShowWindow:YES];
+            } else {
+                [AudioVisualizer setShowWindow:NO];
+            }
         }
     }
     
@@ -871,6 +882,8 @@
             NSLog(@"Unknown LED Visualization selected!\n");
             return;
         }
+    } else if (foundAudioDev == NO) {
+        [AudioVisualizer setShowWindow:NO];
     }
     
     // Store changed value in preferences

@@ -14,11 +14,6 @@
 //
 
 #ifdef DEBUG
-#define DEBUG_PLOT_FFT
-//#define DEBUG_PLOT_FFT_RAW
-#endif
-
-#ifdef DEBUG_PLOT_FFT
 #define DEBUG_LOG_BEATS
 #endif
 
@@ -26,10 +21,7 @@
 #import "AppDelegate.h"
 
 #import "EZAudioFFT.h"
-
-#ifdef DEBUG_PLOT_FFT
 #import "EZAudioPlot.h"
-#endif
 
 // Parameters for fine-tuning beat detection
 #define FFT_BUCKET_COUNT 64
@@ -55,11 +47,27 @@ static AppDelegate *appDelegate = nil;
 static EZAudioFFT *fft = nil;
 static int maxBufferSize = 0;
 static float sensitivity = 1.0f;
+static float history[FFT_BUCKET_COUNT][FFT_BUCKET_HISTORY];
+static int nextHistory =  0;
+static int samplesPerBucket = 0;
+static unsigned char lastRed = 0, lastGreen = 0, lastBlue = 0;
+
+static BOOL shouldShowWindow = NO;
+static NSWindow *window = nil;
+static EZAudioPlot *plot = nil;
+static NSTextField *label = nil;
 
 @implementation AudioVisualizer
 
 + (void)setDelegate:(AppDelegate *)delegate {
     appDelegate = delegate;
+    
+    // Initialize static history variables
+    for (int i = 0; i < FFT_BUCKET_COUNT; i++) {
+        for (int j = 0; j < FFT_BUCKET_HISTORY; j++) {
+            history[i][j] = 0.5f;
+        }
+    }
 }
 
 + (void)setSensitivity:(float)sens {
@@ -70,6 +78,7 @@ static float sensitivity = 1.0f;
     // Create Fast Fourier Transformation object
     if (fft == nil) {
         maxBufferSize = bufferSize;
+        samplesPerBucket = bufferSize / FFT_BUCKET_COUNT;
         fft = [EZAudioFFT fftWithMaximumBufferSize:maxBufferSize sampleRate:appDelegate.microphone.audioStreamBasicDescription.mSampleRate];
         
 #ifdef DEBUG
@@ -81,6 +90,7 @@ static float sensitivity = 1.0f;
     if (bufferSize > maxBufferSize) {
         NSLog(@"Buffer Size changed?! %d != %d\n", maxBufferSize, bufferSize);
         maxBufferSize = bufferSize;
+        samplesPerBucket = bufferSize / FFT_BUCKET_COUNT;
         fft = [EZAudioFFT fftWithMaximumBufferSize:maxBufferSize sampleRate:appDelegate.microphone.audioStreamBasicDescription.mSampleRate];
     }
     
@@ -94,20 +104,6 @@ static float sensitivity = 1.0f;
     // Perform fast fourier transformation
     [fft computeFFTWithBuffer:buffer withBufferSize:bufferSize];
     
-    static float history[FFT_BUCKET_COUNT][FFT_BUCKET_HISTORY];
-    static int nextHistory =  0;
-    static int samplesPerBucket = 0;
-    
-    // Initialize static variables
-    if (samplesPerBucket == 0) {
-        samplesPerBucket = bufferSize / FFT_BUCKET_COUNT;
-        for (int i = 0; i < FFT_BUCKET_COUNT; i++) {
-            for (int j = 0; j < FFT_BUCKET_HISTORY; j++) {
-                history[i][j] = 0.5f;
-            }
-        }
-    }
-    
     // Split FFT output into a small number of 'buckets' or 'bins' and add to circular history buffer
     for (int i = 0; i < FFT_BUCKET_COUNT; i++) {
         float sum = 0.0f;
@@ -117,17 +113,13 @@ static float sensitivity = 1.0f;
         history[i][nextHistory] = sum / samplesPerBucket;
     }
     
-#ifdef DEBUG_PLOT_FFT
-    int beatCount = 0;
-#endif
-    
     // Slowly fade old colors to black
-    static unsigned char lastRed = 0, lastGreen = 0, lastBlue = 0;
     lastRed = lastRed * FFT_COLOR_DECAY;
     lastGreen = lastGreen * FFT_COLOR_DECAY;
     lastBlue = lastBlue * FFT_COLOR_DECAY;
     
     // Check for any beats
+    int beatCount = 0;
     for (int i = 0; i < FFT_BUCKET_COUNT; i++) {
         // Skip frequency bands, if required
 #ifdef FFT_BUCKET_SKIP_CONDITION
@@ -172,9 +164,7 @@ static float sensitivity = 1.0f;
             NSLog(@"Beat in %d with c: %f v: %f", i, (history[i][nextHistory] / average), v);
 #endif
             
-#ifdef DEBUG_PLOT_FFT
             beatCount++;
-#endif
         }
     }
     
@@ -187,72 +177,89 @@ static float sensitivity = 1.0f;
         lastSentBlue = lastBlue;
     }
 
-    // Display debug FFT plot, if required
-#ifdef DEBUG_PLOT_FFT
-    static NSWindow *window = nil;
-    static EZAudioPlot *plot = nil;
-    static NSTextField *label = nil;
-    if ((window == nil) || (plot == nil) || (label == nil)) {
-        // Create window
-        NSRect frame = NSMakeRect(450, 300, 600, 400);
-        window = [[NSWindow alloc] initWithContentRect:frame
-                                             styleMask:NSClosableWindowMask | NSTitledWindowMask | NSBorderlessWindowMask
-                                               backing:NSBackingStoreBuffered
-                                                 defer:NO];
-        [window setTitle:@"Debug FFT"];
+    // Update debug FFT plot, if required
+    if (shouldShowWindow && (window != nil) && (plot != nil) && (label != nil)) {
+        for (UInt32 i = 0; i < FFT_BUCKET_COUNT; i++) {
+            // Copy output to input buffer (a bit ugly, but is always big enough)
+            buffer[i] = history[i][nextHistory];
+            
+            // Scale so user can see something
+            buffer[i] *= FFT_DEBUG_FACTOR;
+            if (buffer[i] > 1.0f) buffer[i] = 1.0f;
+            if (buffer[i] < -1.0f) buffer[i] = -1.0f;
+        }
+        [plot updateBuffer:buffer withBufferSize:bufferSize];
         
-        // Create FFT Plot and add to window
-        plot = [[EZAudioPlot alloc] initWithFrame:window.contentView.frame];
-        plot.color = [NSColor whiteColor];
-        plot.shouldOptimizeForRealtimePlot = NO; // Not working with 'YES' here?!
-        plot.shouldFill = YES;
-        plot.shouldCenterYAxis = NO;
-        plot.shouldMirror = NO;
-        plot.plotType = EZPlotTypeBuffer;
-        [window.contentView addSubview:plot];
-        
-        // Create beat count label
-        label = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 380, 600, 20)];
-        [label setTextColor:[NSColor whiteColor]];
-        [label setEditable:NO];
-        [label setBezeled:NO];
-        [label setDrawsBackground:NO];
-        [label setSelectable:NO];
-        [label setStringValue:@"-"];
-        [window.contentView addSubview:label];
-        
-        // Make window visible
-        [window makeKeyAndOrderFront:appDelegate.application];
-        NSLog(@"Created debugging FFT Plot window...\n");
+        // Change background color to match color output and show beat counter
+        [window setBackgroundColor:[NSColor colorWithCalibratedRed:lastRed / 255.0 green:lastGreen / 255.0 blue:lastBlue / 255.0 alpha:1.0]];
+        [label setStringValue:[NSString stringWithFormat:@"Beats: %d", beatCount]];
     }
-    
-    // Copy output to input buffer (a bit ugly, but is always big enough)
-    // Scale so user can see something
-# ifdef DEBUG_PLOT_FFT_RAW
-    memcpy(buffer, fft.fftData, bufferSize * sizeof(float));
-    for (UInt32 i = 0; i < bufferSize; i++) {
-        buffer[i] *= FFT_DEBUG_RAW_FACTOR;
-# else
-    for (int i = 0; i < FFT_BUCKET_COUNT; i++) {
-        buffer[i] = history[i][nextHistory];
-    }
-    for (UInt32 i = 0; i < FFT_BUCKET_COUNT; i++) {
-        buffer[i] *= FFT_DEBUG_FACTOR;
-# endif
-        if (buffer[i] > 1.0f) buffer[i] = 1.0f;
-        if (buffer[i] < -1.0f) buffer[i] = -1.0f;
-    }
-    [plot updateBuffer:buffer withBufferSize:bufferSize];
-    
-    // Change background color to match color output and show beat counter
-    [window setBackgroundColor:[NSColor colorWithCalibratedRed:lastRed / 255.0 green:lastGreen / 255.0 blue:lastBlue / 255.0 alpha:1.0]];
-    [label setStringValue:[NSString stringWithFormat:@"Beats: %d", beatCount]];
-#endif
         
     // Point to next history buffer
     nextHistory++;
     if (nextHistory >= FFT_BUCKET_HISTORY) {
         nextHistory = 0;
+    }
+}
+
++ (void)setShowWindow:(BOOL)showWindow {
+    shouldShowWindow = showWindow;
+    
+    // Close window if it was visible and should no longer be
+    if (showWindow == YES) {
+        if ((window == nil) || (plot == nil) || (label == nil)) {
+            // Create window
+            NSRect frame = NSMakeRect(450, 300, 600, 400);
+            window = [[NSWindow alloc] initWithContentRect:frame
+                                                 styleMask:NSClosableWindowMask | NSTitledWindowMask | NSBorderlessWindowMask
+                                                   backing:NSBackingStoreBuffered
+                                                     defer:NO];
+            [window setTitle:@"CaseLights FFT"];
+            [window setReleasedWhenClosed:NO];
+            
+            // Create FFT Plot and add to window
+            plot = [[EZAudioPlot alloc] initWithFrame:window.contentView.frame];
+            plot.color = [NSColor whiteColor];
+            plot.shouldOptimizeForRealtimePlot = NO; // Not working with 'YES' here?!
+            plot.shouldFill = YES;
+            plot.shouldCenterYAxis = NO;
+            plot.shouldMirror = NO;
+            plot.plotType = EZPlotTypeBuffer;
+            [window.contentView addSubview:plot];
+            
+            // Create beat count label
+            label = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 380, 600, 20)];
+            [label setTextColor:[NSColor whiteColor]];
+            [label setEditable:NO];
+            [label setBezeled:NO];
+            [label setDrawsBackground:NO];
+            [label setSelectable:NO];
+            [label setStringValue:@"-"];
+            [window.contentView addSubview:label];
+            
+#ifdef DEBUG
+            NSLog(@"Created debugging FFT Plot window...\n");
+#endif
+        }
+        
+        if ([window isVisible] == NO) {
+            // Make window visible
+            [window makeKeyAndOrderFront:appDelegate.application];
+            
+#ifdef DEBUG
+            NSLog(@"Made debugging FFT Plot window visible...\n");
+#endif
+        }
+    } else {
+        if (window != nil) {
+            if ([window isVisible] == YES) {
+                [window close];
+                
+#ifdef DEBUG
+                NSLog(@"Closed debugging FFT Plot window...\n");
+#endif
+            }
+        }
     }
 }
 
