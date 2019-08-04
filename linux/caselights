@@ -1,9 +1,12 @@
+#!/usr/bin/env python3
+
 # CaseLights Linux Qt System Tray client
 # depends on:
 # - python-pyqt5
 # - python-pyserial
 
 import sys
+import os.path
 import serial, serial.tools, serial.tools.list_ports
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QSystemTrayIcon, QAction, QMenu
@@ -15,6 +18,9 @@ class CaseLights():
     vendor = "xythobuz"
     version = "0.1"
 
+    iconPath = "/usr/share/pixmaps/"
+    iconName = "caselights_icon.png"
+
     staticColors = [
         [ "Off",     "0",   "0",   "0", None ],
         [ "Red",   "255",   "0",   "0", None ],
@@ -25,7 +31,6 @@ class CaseLights():
 
     usedPort = None
     serial = None
-
     menu = None
     portMenu = None
     portActions = None
@@ -43,10 +48,6 @@ class CaseLights():
         self.readSettings()
         if self.usedPort is not None:
             self.connect()
-
-        pic = QPixmap(32, 32)
-        pic.load("icon.png")
-        icon = QIcon(pic)
 
         self.menu = QMenu()
 
@@ -72,11 +73,25 @@ class CaseLights():
         self.quitAction.triggered.connect(self.exit)
         self.menu.addAction(self.quitAction)
 
+        iconPathName = ""
+        if os.path.isfile(self.iconName):
+            iconPathName = self.iconName
+        elif os.path.isfile(self.iconPath + self.iconName):
+            iconPathName = self.iconPath + self.iconName
+        else:
+            print("no icon found")
+
+        icon = QIcon()
+        if iconPathName is not "":
+            pic = QPixmap(32, 32)
+            pic.load(iconPathName)
+            icon = QIcon(pic)
+
         trayIcon = QSystemTrayIcon(icon)
         trayIcon.setToolTip(self.name + " " + self.version)
         trayIcon.setContextMenu(self.menu)
         trayIcon.setVisible(True)
-        
+
         sys.exit(app.exec_())
 
     def exit(self):

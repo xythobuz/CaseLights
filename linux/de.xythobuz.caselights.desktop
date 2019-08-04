@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=CaseLights
+Comment=RGB LED and UV strip controls
+Path=/usr/bin
+Exec=caselights
+Icon=/usr/share/pixmaps/caselights_icon.png
+Terminal=false
+Categories=Utility;

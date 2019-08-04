@@ -1,0 +1,24 @@
+# Maintainer: Thomas Buck <thomas@xythobuz.de>
+pkgname=CaseLights
+pkgver=0.1
+pkgrel=1
+pkgdesc="RGB LED and UV strip controls"
+arch=('any')
+license=('unknown')
+depends=('python-pyqt5'
+         'python-pyserial')
+source=("caselights"
+        "caselights_icon.png"
+        "de.xythobuz.caselights.desktop")
+md5sums=(SKIP
+         SKIP
+         SKIP)
+
+package() {
+	mkdir -p "$pkgdir/usr/bin"
+	cp caselights "$pkgdir/usr/bin/caselights"
+	mkdir -p "$pkgdir/usr/share/pixmaps"
+	cp caselights_icon.png "$pkgdir/usr/share/pixmaps/caselights_icon.png"
+	mkdir -p "$pkgdir/usr/share/applications"
+	cp de.xythobuz.caselights.desktop "$pkgdir/usr/share/applications/de.xythobuz.caselights.desktop"
+}
