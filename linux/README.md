@@ -3,7 +3,7 @@
 Simple Python Qt Linux client for CaseLights. Install on Arch Linux like this:
 
     makepkg
-    sudo pacman -U CaseLights-0.1.1-any.pkg.tar.xz
+    sudo pacman -U CaseLights-0.2-1-any.pkg.tar.xz
 
 Or on all other linux distros:
 

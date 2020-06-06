@@ -20,7 +20,7 @@ from PyQt5.QtCore import QCoreApplication, QSettings
 class CaseLights():
     name = "CaseLights"
     vendor = "xythobuz"
-    version = "0.1"
+    version = "0.2"
 
     iconPath = "/usr/share/pixmaps/"
     iconName = "caselights_icon.png"
@@ -35,7 +35,7 @@ class CaseLights():
 
     slowFadeUpdateFreq = 5
     fastFadeUpdateFreq = 20
-    cpuUsageUpdateFreq = 1
+    cpuUsageUpdateFreq = 2
     fadeSaturation = 1.0
     fadeValue = 1.0
     fadeHueCounter = 0
@@ -267,6 +267,8 @@ class CaseLights():
 
     def animOff(self):
         self.animationRunning = False
+        if self.animation != None:
+            self.animation.join()
         self.animation = None
         self.printRGBStrings("0", "0", "0")
         time.sleep(0.1)
