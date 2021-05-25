@@ -14,7 +14,7 @@ import colorsys
 import serial, serial.tools, serial.tools.list_ports
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtWidgets import QSystemTrayIcon, QAction, QMenu
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import QIcon, QPixmap, QCursor
 from PyQt5.QtCore import QCoreApplication, QSettings
 
 class CaseLights():
@@ -124,9 +124,14 @@ class CaseLights():
         trayIcon = QSystemTrayIcon(icon)
         trayIcon.setToolTip(self.name + " " + self.version)
         trayIcon.setContextMenu(self.menu)
+        trayIcon.activated.connect(self.showHide)
         trayIcon.setVisible(True)
 
         sys.exit(app.exec_())
+
+    def showHide(self, activationReason):
+        if activationReason == QSystemTrayIcon.Trigger:
+            self.menu.popup(QCursor.pos())
 
     def exit(self):
         if self.serial is not None:
