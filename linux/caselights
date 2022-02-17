@@ -196,12 +196,17 @@ class CaseLights():
         self.serial = serial.Serial()
         self.serial.port = self.usedPort
         self.serial.baudrate = 115200
-        self.serial.open()
-        if self.serial.is_open:
-            print("connected to: " + self.usedPort)
-        else:
+
+        try:
+            self.serial.open()
+            if self.serial.is_open:
+                print("connected to: " + self.usedPort)
+            else:
+                print("error connecting to: " + self.usedPort)
+            return self.serial.is_open
+        except serial.serialutil.SerialException:
             print("error connecting to: " + self.usedPort)
-        return self.serial.is_open
+            return False
 
     def printRGBStrings(self, rs, gs, bs):
         if self.serial.is_open:

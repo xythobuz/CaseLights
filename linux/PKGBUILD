@@ -1,7 +1,7 @@
 # Maintainer: Thomas Buck <thomas@xythobuz.de>
 pkgname=CaseLights
 pkgver=0.2
-pkgrel=2
+pkgrel=3
 pkgdesc="RGB LED and UV strip controls"
 arch=('any')
 license=('unknown')
